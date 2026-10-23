@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "keyaudit"
+version = "0.1.0.dev0"
+description = "Calibrated estimates of benchmark answer-key error rates from model-response panels, with a ranked list of suspect items, validated against human relabels."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "keyaudit contributors" }]
+keywords = [
+    "llm-evaluation", "benchmarks", "label-errors", "item-response-theory", "dawid-skene",
+    "prediction-powered-inference", "mmlu-pro", "gpqa", "data-quality", "statistics",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+# numpy/scipy for the statistics, pyarrow for parquet, huggingface-hub for repo listing and
+# token resolution, httpx for byte-range reads (already a huggingface-hub dependency),
+# threadpoolctl to pin BLAS threads in worker processes.
+dependencies = [
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "pyarrow>=15,<27",
+    "huggingface-hub>=0.34,<3",
+    "httpx>=0.27,<1",
+    "threadpoolctl>=3.1,<4",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.8,<4"]
+
+[project.urls]
+Homepage = "https://github.com/h-a-forster/keyaudit"
+Documentation = "https://github.com/h-a-forster/keyaudit/tree/main/docs"
+Issues = "https://github.com/h-a-forster/keyaudit/issues"
+Changelog = "https://github.com/h-a-forster/keyaudit/blob/main/CHANGELOG.md"
+
+[project.scripts]
+keyaudit = "keyaudit.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.uv]
+# Resolve only releases at least two weeks old at scaffold time (reproducible lock, no
+# day-old releases). Move the date forward deliberately when upgrading.
+exclude-newer = "2026-10-10T00:00:00Z"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/keyaudit"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/keyaudit", "tests", "docs", "configs", "scripts", "README.md", "LICENSE",
+    "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "CITATION.cff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]

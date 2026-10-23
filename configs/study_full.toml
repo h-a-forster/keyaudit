@@ -1,0 +1,73 @@
+# Full-size study: up to 300 panel models, 1000 bootstrap replicates, 10 leave-one-family-out
+# refits, 100 planted-key replicates. Projected 2-3 h wall on 3 workers and ~1-1.5 GB of
+# downloads (a projection, not a measurement). Resumes from runs/study-full/units/.
+# Needs an HF token whose account has accepted the conditions of each details repository.
+
+[study]
+name = "study-full"
+seed = 20261024
+out_dir = "runs/study-full"
+benchmarks = ["mmlu_pro", "gpqa", "bbh_ld3", "bbh_navigate", "bbh_object_counting"]
+
+[panel]
+# open-llm-leaderboard/contents at the last update before the leaderboard was archived.
+contents_revision = "9c09a7cae43334062a82cb164f2ef255013dafa2"
+n_models = 300
+min_models = 150
+min_mmlu_pro_raw = 0.15
+max_per_family = 2
+top_quintile_cap = 40
+per_other_quintile = 65
+dedupe_agreement = 0.95
+
+[data]
+cache_dir = "data"
+per_model_budget_mb = 15
+total_budget_mb = 3000
+# TIGER-Lab/MMLU-Pro "Upload dataset" commits since 2024-06-11: used to fingerprint the
+# revision each leaderboard run used and to derive maintainer key corrections. The last
+# entry is the reference "latest" revision.
+mmlu_pro_revisions = [
+    "241199e1d7a6b280ed13e61c11a40841cbb58c89",  # 2024-06-11
+    "6b65d8a9de5c91740fa8ae414cef23a65c5e2a4b",  # 2024-07-06
+    "53173e8ee5842ab37c1312ef4001c2c08036e7a7",  # 2024-07-11
+    "24f3f5b73dd2d18bf5d9a86a803ba1f1c8122c3c",  # 2024-07-11
+    "897971b44ff637c980d26db3b3c20274b18a951e",  # 2024-07-11
+    "55abfa5a89bcc5cbe8774e720951a10ffc580d16",  # 2024-07-11
+    "7f22cb4db9b2f935c57cf6cb7325e5d869dee33d",  # 2024-07-11
+    "66b10a78ad74f79e440b7643eb4e4dcef1a187d9",  # 2024-07-19
+    "80ab960845e10b67c9ad88895eaee32d58a8be1b",  # 2024-07-19
+    "15c134e9464d887805dd1e385a35adba471b2322",  # 2024-07-21
+    "99176245f8803e1f573e95003bc380af8087d95a",  # 2024-07-21
+    "7db2dc66c66870201e1cf041a3a9297a7674c50a",  # 2024-08-07
+    "73713573382960a0c4288f612ce409427e5e76ff",  # 2024-09-07
+    "014c8cf520218fc7f1ecec95c691a83ae5b8ba14",  # 2024-11-27
+    "295c2820d6984131d76e6a1b0e6e8ce3a11c98fa",  # 2025-04-05
+    "475d58ba0cc18a15fd5d4221f41919199e692331",  # 2025-04-06
+    "9126953e3e196ff1073499437322f9e2c51ed79a",  # 2025-08-25
+    "30527804ea8854662078e457808040d872ecdf29",  # 2025-10-25
+    "24ac2da5bb7c7b42ea1a984c6b535e35a73d30b3",  # 2026-01-19
+]
+redux_revision = "372ea425445d51e1ba1188c56e5e893f8138621f"     # edinburgh-dawg/mmlu-redux-2.0
+platinum_revision = "51920a33bfb4620c789729ace14141e87a14969b"  # madrylab/platinum-bench
+
+[model]
+alpha_pi = 0.5
+outer_iter = 2
+groups = "category"
+tau = "auto"
+kappa0 = 0.5
+
+[uncertainty]
+n_boot = 1000
+boot_chunk = 10
+lofo_families = 10
+planted_reps = 100
+planted_rate = 0.02
+calibration_folds = 5
+fdr_alpha = 0.10
+conf = 0.95
+
+[run]
+workers = 3
+retries = 2

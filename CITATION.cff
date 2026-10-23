@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use keyaudit, please cite it as below."
+title: keyaudit
+abstract: >-
+  Calibrated estimates of benchmark answer-key error rates from panels of model
+  responses, with a ranked list of suspect items, validated against human relabels
+  (MMLU-Redux, Platinum) and with explicit identifiability limits.
+type: software
+authors:
+  - name: keyaudit contributors
+repository-code: "https://github.com/h-a-forster/keyaudit"
+license: MIT
+version: 0.1.0.dev0
+keywords:
+  - llm evaluation
+  - benchmark label errors
+  - item response theory
+  - prediction-powered inference
+references:
+  - type: article
+    authors:
+      - family-names: Gema
+        given-names: Aryo Pradipta
+    title: "Are We Done with MMLU?"
+    year: 2024
+    notes: arXiv:2406.04127
+  - type: article
+    authors:
+      - family-names: Vendrow
+        given-names: Joshua
+      - family-names: Vendrow
+        given-names: Edward
+      - family-names: Beery
+        given-names: Sara
+      - family-names: Madry
+        given-names: Aleksander
+    title: "Do Large Language Model Benchmarks Test Reliability?"
+    year: 2025
+    notes: arXiv:2502.03461
+  - type: article
+    authors:
+      - family-names: Wang
+        given-names: Yubo
+    title: "MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark"
+    year: 2024
+    notes: arXiv:2406.01574
