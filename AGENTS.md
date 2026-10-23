@@ -50,8 +50,8 @@ maintainer corrections), and rank suspect items.
 |---|---|---|
 | `src/keyaudit/stats.py` | intervals, Holm/BH, Bayesian FDR, difference estimator | done |
 | `src/keyaudit/study/config.py` | TOML schema, validation, hash | done |
-| `src/keyaudit/checkpoint.py` | UnitStore, run_units (<= 3 processes) | M1 |
-| `scripts/run_study.py` | resume-on-failure wrapper | M1 |
+| `src/keyaudit/checkpoint.py` | UnitStore, run_units (<= 3 processes) | done (M1) |
+| `scripts/run_study.py` | resume-on-failure wrapper | done (M1) |
 | `src/keyaudit/hub.py` | HTTP, RangeFile, verified downloads, manifest | M2 |
 | `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | M2 |
 | `src/keyaudit/matrix.py` | ResponseMatrix, canonical keys, dedupe, families | M2 (class done) |
@@ -103,8 +103,13 @@ Done (M0):
 - `stats` (intervals, Holm/BH, Bayesian FDR, stratified difference estimator) and
   `study.config` with reference-value tests.
 
+Done (M1):
+- `checkpoint.UnitStore` / `run_units` (atomic unit files, skip on rerun, config-hash
+  refusal, `denied` status, <= 3 processes with BLAS threads 1, retries) and
+  `scripts/run_study.py` (3 attempts, exit 3 = precondition, not retried).
+
 Next:
-1. M1 `checkpoint` + `scripts/run_study.py`.
+1. (M1 done.)
 2. M2 data layer. Needs an HF read token as `HF_TOKEN` from an account that has accepted the
    conditions of the panel's details repositories (the account owner must do this in a
    browser). Until then, build and test against small recorded fixtures; confirm column names
