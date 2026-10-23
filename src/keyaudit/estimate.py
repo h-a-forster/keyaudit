@@ -21,6 +21,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from scipy.special import expit
 
 from keyaudit import stats
 from keyaudit.keymix import fit_keymix
@@ -95,28 +96,45 @@ def _feature(s: NDArray[np.float64]) -> NDArray[np.float64]:
     return np.log(p / (1 - p))
 
 
-def platt_fit(scores: ArrayLike, y: ArrayLike, ridge: float = 1e-3) -> tuple[float, float]:
-    """Logistic regression of ``y`` on ``logit(score)``: returns (intercept, slope)."""
+def platt_fit(scores: ArrayLike, y: ArrayLike, ridge: float = 1e-2) -> tuple[float, float]:
+    """Logistic regression of ``y`` on ``logit(score)``: returns (intercept, slope).
+
+    Newton steps with backtracking on the ridge-penalised log-likelihood, so separable or
+    nearly separable labels (few positives) give large but finite coefficients.
+    """
     x = _feature(np.asarray(scores, dtype=float))
     yy = np.asarray(y, dtype=float)
     if x.size == 0:
         raise ValueError("no labeled items")
-    beta = np.array([np.log((yy.mean() + 1e-3) / (1 - yy.mean() + 1e-3)), 0.0])
     xm = np.column_stack([np.ones_like(x), x])
+
+    def objective(beta: NDArray[np.float64]) -> float:
+        z = xm @ beta
+        return float(np.sum(yy * z - np.logaddexp(0.0, z)) - 0.5 * ridge * beta @ beta)
+
+    beta = np.array([np.log((yy.mean() + 1e-3) / (1 - yy.mean() + 1e-3)), 0.0])
+    obj = objective(beta)
     for _ in range(100):
-        p = 1 / (1 + np.exp(-(xm @ beta)))
+        p = expit(xm @ beta)
         grad = xm.T @ (yy - p) - ridge * beta
         hess = (xm * (p * (1 - p))[:, None]).T @ xm + ridge * np.eye(2)
         step = np.linalg.solve(hess, grad)
-        beta = beta + step
-        if np.abs(step).max() < 1e-10:
+        t = 1.0
+        while t > 1e-8:
+            cand = beta + t * step
+            c_obj = objective(cand)
+            if c_obj >= obj - 1e-12:
+                break
+            t /= 2
+        beta, obj = cand, c_obj
+        if np.abs(t * step).max() < 1e-10:
             break
     return float(beta[0]), float(beta[1])
 
 
 def platt_apply(scores: ArrayLike, params: tuple[float, float]) -> NDArray[np.float64]:
     x = _feature(np.asarray(scores, dtype=float))
-    return 1 / (1 + np.exp(-(params[0] + params[1] * x)))
+    return expit(params[0] + params[1] * x)
 
 
 def cross_fitted_calibration(

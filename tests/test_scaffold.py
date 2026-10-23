@@ -30,6 +30,8 @@ MODULES = [
     "keyaudit.study.config",
     "keyaudit.study.runner",
     "keyaudit.study.report",
+    "keyaudit.study.simulation",
+    "keyaudit.simulate",
 ]
 
 
@@ -70,9 +72,12 @@ def test_configs_validate(name: str, capsys: pytest.CaptureFixture[str]) -> None
     assert cfg.study.name in capsys.readouterr().out
 
 
-def test_unimplemented_stage_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["status", "--config", str(ROOT / "configs" / "study.toml")]) == 2
-    assert "milestone" in capsys.readouterr().err
+def test_report_needs_a_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    text = (ROOT / "configs" / "study.toml").read_text(encoding="utf-8")
+    cfg = tmp_path / "c.toml"
+    cfg.write_text(text.replace("runs/study-v1", (tmp_path / "r").as_posix()), encoding="utf-8")
+    assert main(["report", "--config", str(cfg)]) == 2
+    assert "no finished units" in capsys.readouterr().err
 
 
 def test_config_rejects_unknown_key(tmp_path: Path) -> None:

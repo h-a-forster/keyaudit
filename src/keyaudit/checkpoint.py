@@ -106,12 +106,15 @@ def _jsonable(obj: Any) -> Any:
 class UnitStore:
     """Atomic per-unit result files, a manifest and ``progress.log`` under ``root``."""
 
-    def __init__(self, root: Path | str, config_hash: str) -> None:
+    def __init__(self, root: Path | str, config_hash: str, read_only: bool = False) -> None:
         self.root = Path(root)
         self.config_hash = config_hash
         self.units_dir = self.root / "units"
         self.log_path = self.root / "progress.log"
         self.manifest_path = self.root / "manifest.json"
+        self.read_only = read_only
+        if read_only:  # inspection only (status, report): no manifest entry, no directories
+            return
         self.units_dir.mkdir(parents=True, exist_ok=True)
         manifest: dict[str, Any]
         if self.manifest_path.exists():
@@ -156,6 +159,8 @@ class UnitStore:
     def list_units(self, prefix: str = "") -> list[str]:
         """Finished unit ids under ``prefix`` (sorted)."""
         out = []
+        if not self.units_dir.exists():
+            return out
         for p in sorted(self.units_dir.rglob("*.json")):
             uid = p.relative_to(self.units_dir).with_suffix("").as_posix()
             if uid.startswith(prefix) and self.done(uid):
@@ -163,8 +168,13 @@ class UnitStore:
         return out
 
     # -- writes -----------------------------------------------------------------------------
+    def _writable(self) -> None:
+        if self.read_only:
+            raise PermissionError("UnitStore opened read-only")
+
     def save(self, unit_id: str, arrays: dict[str, Any], meta: dict[str, Any]) -> None:
         """Write the arrays, then the metadata (the metadata file marks the unit done)."""
+        self._writable()
         npz, meta_path = self._paths(unit_id)
         npz.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=npz.parent, prefix=f".{npz.name}.", suffix=".tmp")
@@ -189,6 +199,7 @@ class UnitStore:
         _atomic_write_bytes(meta_path, json.dumps(info, indent=1).encode("utf-8") + b"\n")
 
     def mark_denied(self, unit_id: str, reason: str) -> None:
+        self._writable()
         _, meta_path = self._paths(unit_id)
         info = {
             "unit": unit_id,

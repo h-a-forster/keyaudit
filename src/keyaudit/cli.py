@@ -1,4 +1,5 @@
-"""Command-line interface: ``keyaudit fetch | run | status | report | versions``."""
+"""Command-line interface: ``keyaudit fetch | run | status | report | check-config | simulate |
+versions``."""
 
 from __future__ import annotations
 
@@ -46,6 +47,12 @@ def build_parser() -> argparse.ArgumentParser:
             p.add_argument(
                 "--workers", type=int, default=None, help=f"default from config; max {MAX_WORKERS}"
             )
+    sim = sub.add_parser("simulate", help="run the synthetic-panel simulation study")
+    sim.add_argument("--out", type=Path, default=Path("runs/simulation-v1"))
+    sim.add_argument("--results", type=Path, default=Path("results/simulation-v1"))
+    sim.add_argument("--profile", choices=("default", "quick"), default="default")
+    sim.add_argument("--seed", type=int, default=20261024)
+    sim.add_argument("--workers", type=int, default=MAX_WORKERS)
     sub.add_parser("versions", help="print package and dependency versions")
     return parser
 
@@ -69,10 +76,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "versions":
         _versions()
         return 0
+    if args.command == "simulate":
+        from keyaudit.study.simulation import run_simulation
+
+        workers = min(args.workers, MAX_WORKERS)
+        print(run_simulation(args.out, args.results, args.profile, args.seed, workers))
+        return 0
     cfg = load_config(args.config)
     if args.command == "check-config":
         print(f"{cfg.study.name} {cfg.hash()}")
         return 0
+    from keyaudit.study.runner import PreconditionFailed
+
     try:
         if args.command == "run":
             from keyaudit.study.runner import run_study
@@ -84,6 +99,10 @@ def main(argv: list[str] | None = None) -> int:
 
             for stage, (done, total) in status(cfg).items():
                 print(f"{stage:10s} {done}/{total}")
+            log = Path(cfg.study.out_dir) / "progress.log"
+            if log.exists():
+                tail = log.read_text(encoding="utf-8").splitlines()[-1:]
+                print(f"last log line: {tail[0] if tail else ''}")
         elif args.command == "report":
             from keyaudit.study.report import write_report
 
@@ -92,7 +111,10 @@ def main(argv: list[str] | None = None) -> int:
             from keyaudit.study.runner import run_study
 
             run_study(cfg, stages=("fetch",), workers=cfg.run.workers)
-    except NotImplementedError as exc:
+    except PreconditionFailed as exc:
+        print(f"keyaudit: precondition failed: {exc}", file=sys.stderr)
+        return 3
+    except FileNotFoundError as exc:
         print(f"keyaudit: {exc}", file=sys.stderr)
         return 2
     return 0
