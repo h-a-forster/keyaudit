@@ -1,0 +1,152 @@
+{
+  "mmlu_pro_items_latest": 12032,
+  "mmlu_pro_source_counts_latest": {
+    "ori_mmlu": 6810,
+    "theoremQA": 598,
+    "stemez": 4083,
+    "scibench": 541
+  },
+  "key_text_chain": [
+    {
+      "from": "80ab9608",
+      "to": "15c134e9",
+      "key_text_changes": 0,
+      "key_index_changes": 0
+    },
+    {
+      "from": "15c134e9",
+      "to": "99176245",
+      "key_text_changes": 0,
+      "key_index_changes": 0
+    },
+    {
+      "from": "99176245",
+      "to": "7db2dc66",
+      "key_text_changes": 25,
+      "key_index_changes": 25
+    },
+    {
+      "from": "7db2dc66",
+      "to": "73713573",
+      "key_text_changes": 5,
+      "key_index_changes": 5
+    },
+    {
+      "from": "73713573",
+      "to": "014c8cf5",
+      "key_text_changes": 1,
+      "key_index_changes": 1
+    },
+    {
+      "from": "014c8cf5",
+      "to": "295c2820",
+      "key_text_changes": 20,
+      "key_index_changes": 171
+    },
+    {
+      "from": "295c2820",
+      "to": "475d58ba",
+      "key_text_changes": 1,
+      "key_index_changes": 1
+    },
+    {
+      "from": "475d58ba",
+      "to": "9126953e",
+      "key_text_changes": 1,
+      "key_index_changes": 1
+    },
+    {
+      "from": "9126953e",
+      "to": "30527804",
+      "key_text_changes": 1,
+      "key_index_changes": 0
+    },
+    {
+      "from": "30527804",
+      "to": "24ac2da5",
+      "key_text_changes": 0,
+      "key_index_changes": 0
+    }
+  ],
+  "key_text_changes_chain_start_to_latest": {
+    "n": 54,
+    "by_source": {
+      "ori_mmlu": 44,
+      "stemez": 2,
+      "scibench": 3,
+      "theoremQA": 5
+    },
+    "by_category": {
+      "law": 1,
+      "psychology": 2,
+      "biology": 2,
+      "chemistry": 1,
+      "health": 21,
+      "economics": 1,
+      "math": 24,
+      "engineering": 2
+    }
+  },
+  "redux_error_type_counts": {
+    "bad_question_clarity": 132,
+    "wrong_groundtruth": 106,
+    "ok": 5330,
+    "no_correct_answer": 36,
+    "expert": 32,
+    "bad_options_clarity": 25,
+    "multiple_correct_answers": 39
+  },
+  "redux_rows": 5700,
+  "redux_join_at_014c8cf5": {
+    "redux_rows": 5700,
+    "matched_unique": 2916,
+    "ambiguous_dropped": 9,
+    "same_key_text": 2893,
+    "key_text_differs": 23,
+    "subjects": 56,
+    "label_bad_options_clarity": 17,
+    "label_bad_question_clarity": 61,
+    "label_expert": 16,
+    "label_multiple_correct_answers": 24,
+    "label_no_correct_answer": 17,
+    "label_ok": 2702,
+    "label_wrong_groundtruth": 56,
+    "narrow_positives": 56,
+    "broad_positives": 97
+  },
+  "redux_join_per_subject_range": [
+    20,
+    91
+  ],
+  "platinum_counts": {
+    "bbh_logical_deduction_three_objects": {
+      "n": 200,
+      "consensus": 159,
+      "verified": 41
+    },
+    "bbh_navigate": {
+      "n": 200,
+      "verified": 82,
+      "consensus": 118
+    },
+    "bbh_object_counting": {
+      "n": 200,
+      "verified": 133,
+      "rejected": 10,
+      "consensus": 57
+    },
+    "mmlu_math": {
+      "n": 270,
+      "consensus": 105,
+      "verified": 162,
+      "rejected": 3
+    }
+  },
+  "contents": {
+    "evaluations": 4576,
+    "official_providers": 470,
+    "mmlu_pro_raw_median": 0.3447,
+    "mmlu_pro_raw_max": 0.7303,
+    "gpqa_raw_max": 0.4706
+  }
+}

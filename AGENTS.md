@@ -52,9 +52,9 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/study/config.py` | TOML schema, validation, hash | done |
 | `src/keyaudit/checkpoint.py` | UnitStore, run_units (<= 3 processes) | done (M1) |
 | `scripts/run_study.py` | resume-on-failure wrapper | done (M1) |
-| `src/keyaudit/hub.py` | HTTP, RangeFile, verified downloads, manifest | M2 |
-| `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | M2 |
-| `src/keyaudit/matrix.py` | ResponseMatrix, canonical keys, dedupe, families | M2 (class done) |
+| `src/keyaudit/hub.py` | HTTP, RangeFile, verified downloads, manifest | done (M2) |
+| `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | done (M2; adapter unverified on real data) |
+| `src/keyaudit/matrix.py` | ResponseMatrix, option mapping, dedupe, families | done (M2) |
 | `src/keyaudit/irt.py` | truth curve, penalised JML, constrained item fits | M3 |
 | `src/keyaudit/keymix.py` | mis-keyed latent class EM | M3 |
 | `src/keyaudit/baselines.py` | five comparison scores | M3 |
@@ -108,12 +108,17 @@ Done (M1):
   refusal, `denied` status, <= 3 processes with BLAS threads 1, retries) and
   `scripts/run_study.py` (3 attempts, exit 3 = precondition, not retried).
 
+Done (M2):
+- `hub` (retries, typed 401/403/404, RangeFile with byte budget, verified downloads,
+  manifest), `sources.benchmarks` (revisions, key-text diffs, fingerprinting),
+  `sources.labels` (Redux join, Platinum), `sources.leaderboard` (panel rule, sample parser,
+  adapter gate), `matrix` (option mapping by text hash, dedupe, families).
+- `scripts/check_data_facts.py` reproduced DESIGN 4.2 against the pinned revisions
+  (`results/data-facts.json`; corrections logged in DESIGN 14).
+- Still blocked: the details adapter has never read a real repository (all content requests
+  403 on 2026-10-24). `scripts/probe_details.py` confirms the layout once one is readable.
+
 Next:
-1. (M1 done.)
-2. M2 data layer. Needs an HF read token as `HF_TOKEN` from an account that has accepted the
-   conditions of the panel's details repositories (the account owner must do this in a
-   browser). Until then, build and test against small recorded fixtures; confirm column names
-   on the first readable repository.
 3. M3 model and baselines with the synthetic and equivalence oracles.
 4. M4 estimation and validation; M5 runner, report, first real run, REPORT.md.
 

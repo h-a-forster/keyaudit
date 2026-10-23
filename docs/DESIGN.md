@@ -534,4 +534,40 @@ offline oracle through `uv run --with <pkg>==<version>` in a fixture script.
 
 ## 14. Implementation notes and deviations
 
-None yet.
+Logged in milestone order. "Measured" means checked by `scripts/check_data_facts.py`
+against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, locked by
+`tests/test_data_facts.py`).
+
+**M2 (data layer)**
+
+1. Section 4.2 facts reproduced exactly: 12,032 items and source counts; key-text changes
+   per upload 0, 0, 25, 5, 1, 20, 1, 1, 1, 0 from `80ab9608` to `24ac2da5` (54 in total,
+   44 `ori_mmlu`, 24 math, 21 health; 171 index-only changes in April 2025); Redux counts;
+   Platinum counts; contents (4,576 evaluations, 470 official, MMLU-Pro raw median 0.3447,
+   maximum 0.7303).
+2. Corrections to section 4.2: the GPQA raw maximum in the contents table is 0.4706, not
+   about 0.42. (It is pooled over the three GPQA subsets, so it is not the extended-set
+   accuracy.) The Redux join counts per MMLU-Pro item: 2,916 MMLU-Pro items match a Redux
+   row, 9 are dropped because the matching Redux rows disagree, 23 have a different key text,
+   leaving **2,893** labelled items (the scaffold's 2,902 / 2,879 counted differently; 70
+   groups of MMLU-Pro items share a question text with another item in the same subject).
+   The positive counts are unchanged: 56 `wrong_groundtruth`, 24 `multiple_correct_answers`,
+   17 `no_correct_answer` (97 broad).
+3. Redux is read from the arrow files of the pinned main revision (`372ea425`, LFS sha256
+   verified) rather than from the parquet conversion branch; the rows are the same 5,700.
+4. The details adapter (`sources.leaderboard.parse_samples`, `fetch_responses`) follows
+   the lm-evaluation-harness per-sample layout and the leaderboard task definitions as
+   understood at the time of writing (MMLU-Pro letters A-J scored by `acc`; GPQA "(A)"-"(D)";
+   BBH choice lists with `acc_norm` by byte length including the leading space). **It has not
+   been run on a real details repository**: on 2026-10-24 the available token could list
+   repository files but every content request returned 403 (conditions not accepted). The
+   adapter gate is the safeguard; `scripts/probe_details.py` prints the real schema once a
+   repository is readable. A response letter beyond an item's options (MMLU-Pro items with
+   fewer than 10 options) is recorded as invalid (missing), not as a choice.
+5. Fetch units store option-text hashes (crc32 of the normalised text) instead of option
+   text, so options are mapped across key revisions without keeping any item text in the run
+   directory. GPQA record ids and BBH inputs are stored as truncated sha256 ids.
+6. Panel rule details fixed in code: one evaluation per model (the best MMLU-Pro raw score,
+   since details repositories are per model); "merge" types and the `Merged` flag both
+   exclude; quintiles are computed after the family cap; reserves follow the selected models
+   in priority order within their quintile.

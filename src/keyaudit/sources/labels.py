@@ -16,11 +16,29 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections import Counter, defaultdict
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from keyaudit._stub import not_yet
+import numpy as np
+from numpy.typing import NDArray
+
+from keyaudit import hub
+
+if TYPE_CHECKING:  # pragma: no cover
+    from keyaudit.sources.benchmarks import ItemTable
 
 NARROW = frozenset({"wrong_groundtruth"})
 BROAD = frozenset({"wrong_groundtruth", "no_correct_answer", "multiple_correct_answers"})
+REDUX_REPO = "edinburgh-dawg/mmlu-redux-2.0"
+PLATINUM_REPO = "madrylab/platinum-bench"
+PLATINUM_SUBSETS = (
+    "bbh_logical_deduction_three_objects",
+    "bbh_navigate",
+    "bbh_object_counting",
+    "mmlu_math",
+)
 
 
 def normalise_text(s: str) -> str:
@@ -28,6 +46,147 @@ def normalise_text(s: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", s)).strip().lower()
 
 
-def join_redux(mmlu_pro: object, redux_dir: str) -> object:
-    """Return per-item Redux labels for the MMLU-Pro items covered by MMLU-Redux 2.0."""
-    not_yet("M2", "join_redux")
+@dataclass(frozen=True)
+class ReduxRow:
+    subject: str
+    question: str
+    choices: tuple[str, ...]
+    answer: int
+    error_type: str
+
+    @property
+    def key_text(self) -> str:
+        return self.choices[self.answer]
+
+
+def _read_arrow(path: str | Path) -> dict[str, list[Any]]:
+    import pyarrow as pa
+
+    with pa.memory_map(str(path), "r") as src:
+        try:
+            table = pa.ipc.open_stream(src).read_all()
+        except pa.ArrowInvalid:
+            table = pa.ipc.open_file(src).read_all()
+    return table.to_pydict()
+
+
+def load_redux(
+    revision: str, cache_dir: str | Path, manifest: str | Path | None = None
+) -> list[ReduxRow]:
+    """All MMLU-Redux 2.0 rows at a pinned revision (57 subjects; files sha256-verified)."""
+    rows: list[ReduxRow] = []
+    files = [f for f in hub.list_files(REDUX_REPO, revision) if f.path.endswith(".arrow")]
+    if not files:
+        raise RuntimeError(f"no data files in {REDUX_REPO}@{revision}")
+    for remote in sorted(files, key=lambda f: f.path):
+        path = hub.download_verified(remote, cache_dir)
+        if manifest is not None:
+            hub.append_manifest(manifest, hub.provenance(remote))
+        subject = remote.path.split("/", 1)[0]
+        d = _read_arrow(path)
+        for q, ch, a, e in zip(
+            d["question"], d["choices"], d["answer"], d["error_type"], strict=True
+        ):
+            rows.append(ReduxRow(subject, q, tuple(ch), int(a), str(e)))
+    return rows
+
+
+@dataclass
+class ReduxJoin:
+    """Redux labels for MMLU-Pro items, plus the counts reported in DESIGN 4.2."""
+
+    question_id: NDArray[np.int64]  # MMLU-Pro ids with an applicable Redux label
+    error_type: NDArray[np.str_]
+    subject: NDArray[np.str_]
+    counts: dict[str, int] = field(default_factory=dict)
+    key_mismatch_ids: list[int] = field(default_factory=list)
+
+    def narrow(self) -> NDArray[np.bool_]:
+        return np.isin(self.error_type, sorted(NARROW))
+
+    def broad(self) -> NDArray[np.bool_]:
+        return np.isin(self.error_type, sorted(BROAD))
+
+
+def join_redux(mmlu_pro: ItemTable, redux: list[ReduxRow]) -> ReduxJoin:
+    """Return per-item Redux labels for the MMLU-Pro items covered by MMLU-Redux 2.0.
+
+    Join on (subject, normalised question). Redux questions that occur more than once in a
+    subject with different labels are ambiguous and dropped. MMLU-Pro items that match are
+    "unique matched"; of those only items whose key text equals Redux's (MMLU's) key text keep
+    the label.
+    """
+    by_key: dict[tuple[str, str], list[ReduxRow]] = defaultdict(list)
+    for r in redux:
+        by_key[(r.subject, normalise_text(r.question))].append(r)
+    ids, errs, subs, mismatch = [], [], [], []
+    matched = ambiguous = 0
+    seen: set[int] = set()
+    for i, src in enumerate(mmlu_pro.src):
+        if not src.startswith("ori_mmlu-"):
+            continue
+        subject = src[len("ori_mmlu-") :]
+        cands = by_key.get((subject, normalise_text(mmlu_pro.question[i])))
+        if not cands:
+            continue
+        if len({(c.error_type, normalise_text(c.key_text)) for c in cands}) > 1:
+            ambiguous += 1
+            continue
+        qid = int(mmlu_pro.question_id[i])
+        if qid in seen:
+            continue
+        seen.add(qid)
+        matched += 1
+        row = cands[0]
+        if normalise_text(mmlu_pro.key_text(i)) != normalise_text(row.key_text):
+            mismatch.append(qid)
+            continue
+        ids.append(qid)
+        errs.append(row.error_type)
+        subs.append(subject)
+    et = np.asarray(errs, dtype=str)
+    counts = {
+        "redux_rows": len(redux),
+        "matched_unique": matched,
+        "ambiguous_dropped": ambiguous,
+        "same_key_text": len(ids),
+        "key_text_differs": len(mismatch),
+        "subjects": len(set(subs)),
+        **{f"label_{k}": v for k, v in sorted(Counter(errs).items())},
+        "narrow_positives": int(np.isin(et, sorted(NARROW)).sum()),
+        "broad_positives": int(np.isin(et, sorted(BROAD)).sum()),
+    }
+    return ReduxJoin(
+        question_id=np.asarray(ids, dtype=np.int64),
+        error_type=et,
+        subject=np.asarray(subs, dtype=str),
+        counts=counts,
+        key_mismatch_ids=mismatch,
+    )
+
+
+def load_platinum(
+    revision: str, cache_dir: str | Path, manifest: str | Path | None = None
+) -> dict[str, dict[str, list[Any]]]:
+    """Platinum subsets used by keyaudit: ``{subset: columns}`` (local use only)."""
+    import pyarrow.parquet as pq
+
+    out: dict[str, dict[str, list[Any]]] = {}
+    files = {f.path.split("/", 1)[0]: f for f in hub.list_files(PLATINUM_REPO, revision)}
+    for subset in PLATINUM_SUBSETS:
+        remote = files.get(subset)
+        if remote is None:
+            raise FileNotFoundError(f"{PLATINUM_REPO}@{revision} has no subset {subset}")
+        path = hub.download_verified(remote, cache_dir)
+        if manifest is not None:
+            hub.append_manifest(manifest, hub.provenance(remote))
+        out[subset] = pq.read_table(path).to_pydict()
+    return out
+
+
+def platinum_counts(platinum: dict[str, dict[str, list[Any]]]) -> dict[str, dict[str, int]]:
+    """Per subset: number of items and of each ``cleaning_status``."""
+    return {
+        s: {"n": len(d["cleaning_status"]), **dict(Counter(d["cleaning_status"]))}
+        for s, d in platinum.items()
+    }
