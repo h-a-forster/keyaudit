@@ -55,10 +55,11 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/hub.py` | HTTP, RangeFile, verified downloads, manifest | done (M2) |
 | `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | done (M2; adapter unverified on real data) |
 | `src/keyaudit/matrix.py` | ResponseMatrix, option mapping, dedupe, families | done (M2) |
-| `src/keyaudit/irt.py` | truth curve, penalised JML, constrained item fits | M3 |
-| `src/keyaudit/keymix.py` | mis-keyed latent class EM | M3 |
-| `src/keyaudit/baselines.py` | five comparison scores | M3 |
-| `src/keyaudit/identifiability.py` | equivalence oracle, J_eff (done), competence, bounds | M3-M4 |
+| `src/keyaudit/irt.py` | truth curve, penalised JML, constrained item fits | done (M3) |
+| `src/keyaudit/keymix.py` | mis-keyed latent class EM | done (M3) |
+| `src/keyaudit/baselines.py` | five comparison scores | done (M3) |
+| `src/keyaudit/identifiability.py` | equivalence oracle, J_eff, competence, bounds | done (M3) |
+| `src/keyaudit/simulate.py` | synthetic panels (planted mis-keys, trick items, families) | done (M3) |
 | `src/keyaudit/estimate.py` | pigeonhole bootstrap, calibration, transfer | M4 |
 | `src/keyaudit/validate.py` | AP and @k (done), operating point, planted keys, LOFO | M4 |
 | `src/keyaudit/study/runner.py`, `report.py` | stages as units, derived results | M5 |
@@ -118,8 +119,13 @@ Done (M2):
 - Still blocked: the details adapter has never read a real repository (all content requests
   403 on 2026-10-24). `scripts/probe_details.py` confirms the layout once one is readable.
 
+Done (M3):
+- `irt`, `keymix`, `baselines`, `identifiability`, `simulate`; equivalence oracle to 1e-12;
+  recovery inside the competence region; baselines vs hand formulas. Deviations 7-12 in
+  DESIGN 14 (residual-based tau, grid-start item fits, endogenous competence).
+
 Next:
-3. M3 model and baselines with the synthetic and equivalence oracles.
+3. (M3 done.) model and baselines with the synthetic and equivalence oracles.
 4. M4 estimation and validation; M5 runner, report, first real run, REPORT.md.
 
 Open questions for the owner:

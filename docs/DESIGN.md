@@ -571,3 +571,43 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
    since details repositories are per model); "merge" types and the `Merged` flag both
    exclude; quintiles are computed after the family cap; reserves follow the selected models
    in priority order within their quintile.
+
+**M3 (model and baselines)**
+
+7. `tau` is estimated from the correlation matrix of IRT residuals of key-correctness
+   (a Yen Q3-type matrix) instead of the raw response-agreement matrix: models that answer
+   independently given the items still agree on most items because they share the truth, so
+   the participation ratio of raw agreement would report J_eff of about 5-10 for an
+   independent panel and flatten every likelihood ratio. Each off-diagonal squared
+   correlation is reduced by its null expectation `1/n_ij` before the ratio
+   `J^2 / sum R_ij^2`. Measured: tau = 1.02 for an independent synthetic panel (J = 100,
+   I = 3,000) and 1.5 for six families with a shared item effect of sd 2.
+8. Constrained candidate fits use the prior a ~ N(1, 2^2) restricted to [0, 8] (a
+   log-normal prior cannot reach the a = 0 bound) and b ~ N(0, 2^2). They start from the best
+   point of a fixed (a, b) grid (31 x 49 points, two matrix products for all rows) and take at
+   most 3 projected Fisher-scoring steps with backtracking. Tested: within 0.1 nats per row of
+   a 300-iteration solution. JML stops after 30 alternations or when no parameter moves by
+   1e-3; ability estimates no longer change after about 10 (the JML scale drifts slowly).
+   A full fit takes about 15 s for 3,000 items x 100 models on one core.
+9. Candidates are the key and every option chosen by at least one model (zero weight
+   otherwise).
+10. `sign_lrt` fits a 2PL curve (no guessing floor). With the 1/K floor a mis-keyed item's
+    key-correctness, which falls towards 0, cannot be fitted by either sign and the baseline
+    is uninformative (AP 0.22-0.27 on synthetic panels).
+11. **Competence is endogenous.** kappa_i is computed for the most probable truth c*. When a
+    mis-key is not detected, c* is the wrong key and kappa_i is low, so mis-keys concentrate
+    outside the competence region S. Measured on synthetic panels (J = 60, I = 1,500,
+    eps = 0.04): true rate 0.026-0.030 inside S (estimated 0.025-0.029) but 0.09-0.14
+    outside (estimated 0.04-0.05). The overall `E_model` is therefore biased low; the
+    recovery check of section 7.2 is applied inside S, and the transfer check of section 5.3
+    (Redux rate inside vs outside S) is essential before extrapolating.
+12. The one-coin Dawid-Skene baseline uses the key as its prior (P(t = key) = 1 - eps), like
+    the main model, so the comparison isolates item difficulty and ability.
+
+**M4 (estimation and validation)**
+
+13. Pigeonhole replicates keep the full-sample tau: resampled duplicate models would
+    otherwise look like a correlated panel and inflate tau.
+14. Platt calibration regresses the label on logit(s_i), with s_i clipped to [1e-6, 1 - 1e-6]
+    and a ridge of 1e-3 on both coefficients. Bootstrap p-values are floored at 1/B.
+
