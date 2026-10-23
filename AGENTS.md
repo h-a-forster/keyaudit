@@ -60,8 +60,8 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/baselines.py` | five comparison scores | done (M3) |
 | `src/keyaudit/identifiability.py` | equivalence oracle, J_eff, competence, bounds | done (M3) |
 | `src/keyaudit/simulate.py` | synthetic panels (planted mis-keys, trick items, families) | done (M3) |
-| `src/keyaudit/estimate.py` | pigeonhole bootstrap, calibration, transfer | M4 |
-| `src/keyaudit/validate.py` | AP and @k (done), operating point, planted keys, LOFO | M4 |
+| `src/keyaudit/estimate.py` | pigeonhole bootstrap, calibration, transfer | done (M4) |
+| `src/keyaudit/validate.py` | AP, AUC, @k, operating point, baseline comparison, planted keys, LOFO | done (M4) |
 | `src/keyaudit/study/runner.py`, `report.py` | stages as units, derived results | M5 |
 | `src/keyaudit/cli.py` | `fetch / run / status / report / check-config / versions` | M0 partial, M5 |
 | `configs/study.toml`, `configs/study_full.toml` | default (< 45 min) and full-size study | done |
@@ -124,8 +124,14 @@ Done (M3):
   recovery inside the competence region; baselines vs hand formulas. Deviations 7-12 in
   DESIGN 14 (residual-based tau, grid-start item fits, endogenous competence).
 
+Done (M4):
+- `estimate` (pigeonhole replicates, cross-fitted Platt calibration, stratum collapsing,
+  difference estimator with a stratified bootstrap check, transfer estimate) and `validate`
+  (AP/AUC with stratified bootstrap, precision/recall at k, FDR operating point, paired AP
+  differences with Holm, planted keys, leave-one-family-out stability).
+
 Next:
-3. (M3 done.) model and baselines with the synthetic and equivalence oracles.
+3. (M3, M4 done.) model and baselines with the synthetic and equivalence oracles.
 4. M4 estimation and validation; M5 runner, report, first real run, REPORT.md.
 
 Open questions for the owner:
