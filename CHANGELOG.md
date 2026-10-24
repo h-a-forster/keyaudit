@@ -5,7 +5,8 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-Fixes from the independent audit of 2026-10-24 (findings 1-4 and 7; 5 and 6 remain open).
+Fixes from the independent audit of 2026-10-24 (findings 1-4 and 7, and the wording of 6;
+finding 5 and the item-bootstrap coverage of 6 remain open).
 
 ### Changed
 

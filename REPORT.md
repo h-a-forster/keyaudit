@@ -31,9 +31,10 @@ section 14.
 - An independent audit (2026-10-24) found eight issues. Fixed after it: the label-only
   interval under-covered (now variance-floored; the intervals above are the corrected ones),
   chemistry is reframed as college chemistry, a duplicate-stem sensitivity is added, and two
-  wording/count errors are corrected. Still open: the calibrated estimator's small negative
-  bias in `tricks` (mixed cross-fitted and full-fit scores) and the unmeasured coverage of the
-  replacement item bootstrap (section 3.3); see AGENTS.md.
+  wording/count errors are corrected, including the old bootstrap's gap (section 3.3). Still
+  open: the calibrated estimator's small negative bias in `tricks` (mixed cross-fitted and
+  full-fit scores) and the unmeasured coverage of the replacement item bootstrap (section
+  3.3); see AGENTS.md.
 
 ## 1. What was run
 
@@ -221,12 +222,15 @@ The coverage panels (30 panels of 1,000 items and 60 models, B = 40) used the pi
 bootstrap, which resamples both items and models. It reported coverage of 29/30 overall and
 22/30 inside the competence region. **The 29/30 is not evidence that the interval works:**
 
-- The median interval is 22 points wide, for a rate near 3%.
+- The median interval is 22 points wide, for a rate near 3%: median limits 2.2% and 24.3%
+  against a mean true rate of 3.1% (per-panel limits in the run's `cov` units).
 - The point estimate lies outside its own interval in 19 of 30 panels.
 
 The cause: a model drawn twice in a replicate counts as two independent confirmations of the
-same answer. This inflates the refitted rate by about 2-3x (DESIGN 14, deviation 20, now
-covered by a regression test).
+same answer. This inflates the refitted replicate rates several-fold (the median interval
+midpoint is 13.3%, more than four times the truth; DESIGN 14, deviation 20, now covered by a
+regression test). An earlier version of this report said "about 2-3x", which understated
+the gap (audit finding 6).
 
 After this run the default became an item bootstrap with the panel held fixed. Its coverage
 has **not** been measured. A smoke run on the quick profile (2 panels, B = 4) shows only that

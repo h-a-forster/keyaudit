@@ -93,7 +93,8 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24 (v0.1.0 build; independent audit received, findings 1-4 and 7 fixed).
+Updated: 2026-10-24 (v0.1.0 build; independent audit received, findings 1-4 and 7 fixed,
+6 partly).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -160,6 +161,8 @@ its own commit, from cached data only (no model calls):
   Redux-`ok` corrected items are 6 distinct Redux rows. The generated `tables.md` still
   counts 23 normalised-text changes.
 - Finding 7: labeled-item count 2,893 in AGENTS.md and DESIGN.
+- Finding 6, wording only: REPORT 3.3 now gives the old bootstrap's median limits (2.2%,
+  24.3%) instead of "2-3x". Item-bootstrap coverage is still unmeasured (below).
 - Finding 8 (info): 4 worker processes ran at once during the v1 runs; no effect on results.
 The fixes have not been re-audited.
 
@@ -167,8 +170,8 @@ Remaining:
 1. Audit finding 5 (open): the calibrated estimator's bias of -0.30 [-0.57, -0.03] points in
    `tricks` comes from mixing cross-fitted scores for labeled items with full-fit scores for
    the population mean (`estimate.py`, calibrated estimate). Use one fixed score function.
-2. Audit finding 6 (open): REPORT 3.3 understates the old-bootstrap gap ("2-3x"; the median
-   upper limit was 24.3% against ~3% true). Measure item-bootstrap coverage in a fresh run
+2. Audit finding 6 (wording fixed in REPORT 3.3: median upper limit 24.3% against 3.1% true;
+   still open:) Measure item-bootstrap coverage in a fresh run
    directory (the default profile takes about 30 min of coverage units on 3 workers). Decide whether the model-rate interval needs a
    bias correction (the estimator is about 1 point low on 1000 x 60 panels).
 3. Run `pytest --runslow` on the v0.1.0 code.
