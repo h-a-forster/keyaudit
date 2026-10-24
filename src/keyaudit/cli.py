@@ -50,7 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
     sim = sub.add_parser("simulate", help="run the synthetic-panel simulation study")
     sim.add_argument("--out", type=Path, default=Path("runs/simulation-v1"))
     sim.add_argument("--results", type=Path, default=Path("results/simulation-v1"))
-    sim.add_argument("--profile", choices=("default", "quick"), default="default")
+    sim.add_argument("--profile", choices=("default", "quick", "coverage"), default="default")
     sim.add_argument("--seed", type=int, default=20261024)
     sim.add_argument("--workers", type=int, default=MAX_WORKERS)
     sub.add_parser("versions", help="print package and dependency versions")

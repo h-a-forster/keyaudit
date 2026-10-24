@@ -53,6 +53,29 @@ def test_item_bootstrap_not_inflated_but_pigeonhole_is() -> None:
     assert np.mean(both) > 2 * full
 
 
+def test_region_bounded_interval() -> None:
+    lo, hi = estimate.region_bounded_interval((0.01, 0.03), 0.8)
+    assert lo == pytest.approx(0.008) and hi == pytest.approx(0.224)
+    # covers any overall rate whose in-region part lies in the in-region interval
+    for inside, outside in ((0.01, 0.0), (0.03, 1.0), (0.02, 0.4)):
+        assert lo - 1e-12 <= 0.8 * inside + 0.2 * outside <= hi + 1e-12
+
+
+def test_item_bootstrap_misses_outside_region_bias_bounded_interval_does_not() -> None:
+    """Audit finding 6: on a seeded panel the overall rate's item-bootstrap interval excludes
+    the truth (the replicates share the bias from invisible outside-region mis-keys), while the
+    in-region interval and the region-bounded overall interval cover it."""
+    from keyaudit.study.simulation import coverage_unit
+
+    m = coverage_unit(0, 3, 400, 30, 5)["meta"]
+    assert m["bootstrap"] == "items" and len(m["boot_overall"]) == 5
+    assert not m["covered_overall"] and m["ci_overall"][1] < m["true_rate"]
+    assert m["covered_region"] and m["covered_overall_bounded"]
+    assert m["ci_overall_bounded"] == pytest.approx(
+        estimate.region_bounded_interval(m["ci_region"], m["region_share"])
+    )
+
+
 def test_percentile_interval() -> None:
     lo, hi = estimate.percentile_interval(np.arange(101), 0.9)
     assert (lo, hi) == pytest.approx((5.0, 95.0))

@@ -10,7 +10,9 @@ Checks the method where the truth is known, as checkpointed units under ``<out>/
   true and estimated rates (overall and inside the competence region), AP against the planted
   mis-keys, precision and recall at q <= 0.10, and the label-calibrated difference estimator
   on a random 25% "human-labeled" sample.
-* ``cov/<rep>``: item bootstrap coverage (panel fixed) on smaller panels (B replicates per unit).
+* ``cov/<rep>``: item bootstrap coverage (panel fixed) on smaller panels (B replicates per unit;
+  the replicate values are stored so other interval forms can be checked), plus the
+  region-bounded interval for the overall rate (:func:`estimate.region_bounded_interval`).
 
 ``summarise`` aggregates the units into ``summary.json`` and ``tables.md``.
 """
@@ -42,6 +44,9 @@ PROFILES: dict[str, dict[str, Any]] = {
                 "scale_items": 1.0},
     "quick": {"reps": 1, "cov_reps": 2, "cov_boot": 4, "cov_items": 400, "cov_models": 30,
               "scale_items": 0.2},
+    # item-bootstrap coverage only (audit finding 6): more panels, fewer replicates per panel
+    "coverage": {"reps": 0, "cov_reps": 72, "cov_boot": 20, "cov_items": 1000, "cov_models": 60,
+                 "scale_items": 1.0},
 }  # fmt: skip
 LABEL_SHARE = 0.25
 KAPPA0 = 0.5
@@ -127,6 +132,8 @@ def coverage_unit(rep: int, seed: int, n_items: int, n_models: int, n_boot: int)
     rg = estimate.percentile_interval([v["region"] for v in vals])
     true_o = float(sp.miskeyed.mean())
     true_r = float(sp.miskeyed[region].mean())
+    share = float(region.mean())
+    ob = estimate.region_bounded_interval(rg, share)
     return {
         "arrays": {},
         "meta": {
@@ -139,8 +146,13 @@ def coverage_unit(rep: int, seed: int, n_items: int, n_models: int, n_boot: int)
             "ci_region": rg,
             "covered_overall": bool(ov[0] <= true_o <= ov[1]),
             "covered_region": bool(rg[0] <= true_r <= rg[1]),
+            "region_share": share,
+            "ci_overall_bounded": ob,
+            "covered_overall_bounded": bool(ob[0] <= true_o <= ob[1]),
             "n_boot": n_boot,
             "bootstrap": "items",
+            "boot_overall": [v["overall"] for v in vals],
+            "boot_region": [v["region"] for v in vals],
         },
     }
 
@@ -228,6 +240,20 @@ def summarise(store: UnitStore, results: Path, profile: str, seed: int) -> str:
                 "cp95": stats.clopper_pearson(k, len(cov)),
                 "cp99_9_lower": stats.clopper_pearson(k, len(cov), 0.998)[0],
             }  # fmt: skip
+        if all("covered_overall_bounded" in r for r in cov):
+            k = sum(r["covered_overall_bounded"] for r in cov)
+            summary["coverage"]["overall_bounded"] = {
+                "covered": k, "n": len(cov), "rate": k / len(cov),
+                "cp95": stats.clopper_pearson(k, len(cov)),
+                "median_width": float(np.median([r["ci_overall_bounded"][1]
+                                                 - r["ci_overall_bounded"][0] for r in cov])),
+            }  # fmt: skip
+        summary["coverage"]["median_width_region"] = float(
+            np.median([r["ci_region"][1] - r["ci_region"][0] for r in cov])
+        )
+        summary["coverage"]["bias_region"] = _mean_ci(
+            [r["est_rate_region"] - r["true_rate_region"] for r in cov]
+        )
         summary["coverage"]["n_boot"] = cov[0]["n_boot"]
         # Units written before deviation 20 (0.1.0.dev0) resampled models too and carry no tag.
         modes = sorted({r.get("bootstrap", "pigeonhole") for r in cov})
@@ -294,6 +320,8 @@ def _tables(s: dict[str, Any]) -> str:
             f"{d['op_precision']['mean']:.3f} | {d['op_recall']['mean']:.3f} | "
             f"{d['op_model_fdr']['mean']:.3f} | {c['covered']}/{c['n']} |"
         )
+    if not s["scenarios"]:  # coverage-only profile: no scenario tables
+        lines = lines[:3]
     t = s["scenarios"].get("tricks")
     if t and "flag_rate_trick" in t:
         lines += [
@@ -317,4 +345,13 @@ def _tables(s: dict[str, Any]) -> str:
             f"inside its own interval in {cv['point_in_interval_overall']}/{cv['overall']['n']} "
             "panels.",
         ]
+        ob = cv.get("overall_bounded")
+        if ob:
+            lines += [
+                "",
+                "Region-bounded interval for the overall rate (in-region interval plus the "
+                f"worst case outside the region): {ob['covered']}/{ob['n']} (CP 95% "
+                f"{ob['cp95'][0]:.2f}-{ob['cp95'][1]:.2f}), median width "
+                f"{100 * ob['median_width']:.2f} points.",
+            ]
     return "\n".join(lines) + "\n"

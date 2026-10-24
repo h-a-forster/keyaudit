@@ -103,6 +103,20 @@ def percentile_interval(values: ArrayLike, conf: float = 0.95) -> tuple[float, f
     return float(np.quantile(v, a)), float(np.quantile(v, 1 - a))
 
 
+def region_bounded_interval(region_ci: tuple[float, float], share: float) -> tuple[float, float]:
+    """Interval for the overall rate that does not assume anything outside the region.
+
+    ``[lo_S * share, hi_S * share + (1 - share)]`` from an interval ``(lo_S, hi_S)`` for the rate
+    inside the competence region and the region's item share (the worst-case bounds of DESIGN
+    5.3 with the in-region sampling interval propagated). It covers the overall rate whenever
+    the in-region interval covers the in-region rate. The item bootstrap of the overall rate
+    does not: the model cannot see mis-keys outside the region, so the overall rate is biased
+    low and the bootstrap replicates share that bias (audit finding 6, DESIGN 14 deviation 22).
+    """
+    lo, hi = region_ci
+    return float(lo * share), float(hi * share + (1.0 - share))
+
+
 # -- calibration -------------------------------------------------------------------------------
 
 
