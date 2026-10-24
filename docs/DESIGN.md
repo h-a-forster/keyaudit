@@ -302,7 +302,8 @@ posterior with models as annotators.
        theta   = sum_s (N_s/N) theta_s,   var = sum_s (N_s/N)^2 var_s
 
    with `f_i` the cross-fitted Platt calibration of `s_i` to Y (5 folds: the f_i of a labeled
-   item never uses its own label). Also reported: the classical stratified estimate (f = 0),
+   item never uses its own label; unlabeled items get the average of the 5 fold maps, see
+   section 14, deviation 21). Also reported: the classical stratified estimate (f = 0),
    the variance ratio, and a stratified bootstrap interval as a check on the normal
    approximation (positives are rare). Implemented in `stats.stratified_difference_estimate`.
 2. **Model-based rate** `E_model(g)` with pigeonhole bootstrap intervals (Owen 2007): each
@@ -644,6 +645,33 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     sampling. The coverage units in `results/simulation-v1/` were computed before this change
     with the pigeonhole bootstrap: their median overall interval is about 22 points wide and
     does not contain its own point estimate in 19 of 30 panels, so the 29/30 "coverage" there
-    is not evidence of a working interval. Coverage of the item bootstrap has not been
-    measured yet. Coverage units now record their mode (`bootstrap`), and the summary refuses
-    to mix modes.
+    is not evidence of a working interval. Coverage units now record their mode
+    (`bootstrap`), and the summary refuses to mix modes. Item-bootstrap coverage was measured
+    afterwards (deviation 22).
+21. **One score function in the calibrated estimator (audit finding 5).** Unlabeled items
+    used a Platt map fitted on all labels, labeled items cross-fitted maps, so the population
+    mean and the labeled residuals used different functions. Unlabeled items now get the
+    average of the fold maps (cross-prediction-powered inference). Effect: with 50 labeled
+    items out of 1,000 (about 2.5 positives) the old mix was biased +0.14 [+0.08, +0.20]
+    points over 6,000 seeded draws, the new form +0.03 [-0.02, +0.08]
+    (`test_calibrated_estimator_unbiased_with_few_labels`, slow). With 25% labels the effect
+    is negligible: on 22 `tricks` panels with 100 label draws each, old -0.00 [-0.02, +0.02],
+    new +0.00 [-0.02, +0.02] points. The audit's -0.30 [-0.57, -0.03] in simulation-v1
+    reproduces exactly from those 10 panels' label draws and is unchanged (-0.30) under the
+    new form, so it was sampling noise in the label draws, not the mixed scores.
+    simulation-v1 has not been rerun with the new form.
+22. **Item-bootstrap coverage and the overall interval (audit finding 6).** Profile
+    `coverage` (72 panels of 1,000 items x 60 independent models, eps = 0.03, B = 20), run
+    with seeds 20261024 (`results/items-cov-v1`) and 20261025 (`results/items-cov-v2`).
+    Percentile interval for the overall rate: 34/72 (CP 95% 0.35-0.59) and 35/72
+    (0.37-0.61). The overall rate is -0.97 and -0.94 points low because mis-keys outside the
+    competence region are invisible, and the replicates share that bias (replicate mean minus
+    estimate about 0.0), so normal, basic and bias-corrected percentile forms computed from
+    the same replicates do not repair it (24/72 to 46/72). Inside the region (bias -0.09
+    points) the percentile interval covered 72/72 in both runs (CP 95% 0.95-1.00; it may be
+    conservative). Fix: the overall rate is reported with a region-bounded interval,
+    `[lo_S * share, hi_S * share + (1 - share)]` (`estimate.region_bounded_interval`), which
+    covers whenever the in-region interval does: 72/72 on the fresh seed, median width 15.8
+    points, so it is valid but wide. The report leads with the in-region rate. Measured only
+    for independent models without trick items; in `tricks` the in-region rate itself is
+    biased about +2 points, and no bootstrap repairs that.

@@ -16,8 +16,10 @@ on the Hugging Face Hub by the account whose token is used (see [Data access](#d
 What has been run is in [REPORT.md](REPORT.md): label-only estimates from MMLU-Redux 2.0
 and a simulation study of the method. An independent audit (2026-10-24) found eight issues;
 the label-only interval (now variance-floored), the chemistry framing (now college chemistry
-and virology), the duplicate-stem sensitivity and two wording/count errors are fixed. Two
-low-severity issues in the model-based estimators remain open (see AGENTS.md).
+and virology), the duplicate-stem sensitivity and two wording/count errors are fixed. The two
+low-severity model-estimator findings were addressed afterwards (one score function in the
+calibrated estimator; item-bootstrap coverage measured, see REPORT.md 3.3); these later fixes
+have not been re-audited.
 
 ## Why
 
@@ -42,7 +44,8 @@ calibrated against a random human-labeled sample instead (docs/DESIGN.md section
   curves and a composite-likelihood scale for correlated models.
 - **Three kinds of estimate.** Label-calibrated: a stratified difference estimator, i.e.
   prediction-powered inference with a finite-population correction. Model-based: a bootstrap
-  over items with the panel held fixed (its coverage is not yet measured; see REPORT.md 3.3).
+  over items with the panel held fixed; in simulation its interval covers the rate inside the
+  competence region but not the overall rate (REPORT.md 3.3).
   Transfer: labelled as an extrapolation. Each comes with worst-case bounds outside the
   panel's competence region.
 - **Validation.** AP, ROC AUC and precision/recall at k against MMLU-Redux 2.0, Platinum and

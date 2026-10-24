@@ -26,15 +26,18 @@ section 14.
   items human-labeled, the calibrated estimator's bias stayed between -0.30 and +0.07 points
   in every scenario.
 - The model-based bootstrap intervals in simulation-v1 are **not valid** (section 3.3). The
-  bootstrap was changed after that run, and the coverage of the replacement has not been
-  measured.
+  replacement item bootstrap was measured afterwards on 72 + 72 smaller panels: it covers
+  the rate inside the competence region (72/72 twice) but not the overall rate (34/72 and
+  35/72), which is about 1 point low. The overall rate now gets a wide region-bounded
+  interval instead.
 - An independent audit (2026-10-24) found eight issues. Fixed after it: the label-only
   interval under-covered (now variance-floored; the intervals above are the corrected ones),
   chemistry is reframed as college chemistry, a duplicate-stem sensitivity is added, and two
-  wording/count errors are corrected, including the old bootstrap's gap (section 3.3). Still
-  open: the calibrated estimator's small negative bias in `tricks` (mixed cross-fitted and
-  full-fit scores) and the unmeasured coverage of the replacement item bootstrap (section
-  3.3); see AGENTS.md.
+  wording/count errors are corrected, including the old bootstrap's gap (section 3.3). The
+  two remaining low-severity findings were then addressed: the calibrated estimator now uses
+  one cross-fitted score function (section 3.1; the -0.30 point bias in `tricks` turned out
+  to be label-draw noise), and the item bootstrap's coverage is measured (section 3.3). These
+  last two fixes have not been re-audited.
 
 ## 1. What was run
 
@@ -190,7 +193,15 @@ estimand is calibrated against human labels.
 
 **The calibrated estimator holds up in every scenario.**
 
-- Its bias is between -0.30 and +0.07 points.
+- Its bias is between -0.30 and +0.07 points. The -0.30 [-0.57, -0.03] in `tricks` is not
+  a property of the estimator: the audit traced it to mixing cross-fitted scores (labeled
+  items) with full-fit scores (population mean), but on the same 10 panels the one-function
+  form adopted after the audit gives the same -0.30, and averaged over 100 label draws on
+  each of 22 `tricks` panels both forms give -0.00 to +0.00 [-0.02, +0.02] points. So the
+  -0.30 comes from those 10 label draws. The mixed form is biased when few items are labeled
+  (+0.14 [+0.08, +0.20] points with 50 of 1,000 labeled, seeded test), which is why it was
+  replaced (DESIGN 14, deviation 21). The table above was computed with the old form and has
+  not been rerun.
 - Its standard error (0.24 to 0.44 points) is about half that of the labels-only estimator
   on the same labels (0.51 to 0.56 points).
 - Interval coverage was 37/40 across scenarios, and 8/10 in `tricks`. With 10 replicates per
@@ -216,11 +227,12 @@ Average precision against the planted mis-keys, and the operating point at q <= 
 These figures are means over 10 panels. Replicate intervals are in `summary.json`, and no
 paired test between methods was run on the simulation.
 
-### 3.3 Bootstrap intervals for the model rate are not valid in this run
+### 3.3 Bootstrap intervals for the model rate
 
-The coverage panels (30 panels of 1,000 items and 60 models, B = 40) used the pigeonhole
-bootstrap, which resamples both items and models. It reported coverage of 29/30 overall and
-22/30 inside the competence region. **The 29/30 is not evidence that the interval works:**
+**The pigeonhole bootstrap used in simulation-v1 is not valid.** The coverage panels
+(30 panels of 1,000 items and 60 models, B = 40) resampled both items and models. They
+reported coverage of 29/30 overall and 22/30 inside the competence region. The 29/30 is not
+evidence that the interval works:
 
 - The median interval is 22 points wide, for a rate near 3%: median limits 2.2% and 24.3%
   against a mean true rate of 3.1% (per-panel limits in the run's `cov` units).
@@ -232,10 +244,36 @@ midpoint is 13.3%, more than four times the truth; DESIGN 14, deviation 20, now 
 regression test). An earlier version of this report said "about 2-3x", which understated
 the gap (audit finding 6).
 
-After this run the default became an item bootstrap with the panel held fixed. Its coverage
-has **not** been measured. A smoke run on the quick profile (2 panels, B = 4) shows only that
-it runs. The estimator is also biased low by about 1.0 point on these smaller panels, so an
-interval that ignores the bias will under-cover even if the bootstrap itself is sound.
+**The item bootstrap (panel fixed), measured after the audit.** After that run the default
+became an item bootstrap with the panel held fixed. Its coverage was measured with the
+`coverage` profile: 72 panels of 1,000 items and 60 independent models (true rate 3%,
+B = 20), run twice with different seeds (`results/items-cov-v1`, `results/items-cov-v2`;
+about 15 minutes each on 3 workers).
+
+| Nominal 95% interval | Seed 20261024 | Seed 20261025 | Median width |
+|---|---|---|---|
+| Rate inside the competence region, percentile | 72/72 (CP 95% 0.95-1.00) | 72/72 (0.95-1.00) | 1.7 points |
+| Overall rate, percentile | 34/72 (0.35-0.59) | 35/72 (0.37-0.61) | 1.7 points |
+| Overall rate, region-bounded (added after the first run) | not recorded | 72/72 (0.95-1.00) | 15.8 points |
+
+- **Inside the region the interval works on these panels.** The in-region rate is 0.09
+  points low on average, and the interval covered every panel; it may be conservative.
+- **For the overall rate it does not.** The overall rate is 0.97 and 0.94 points low, because
+  the model cannot see mis-keys outside the competence region. The replicates share that
+  bias (their mean is within 0.03 points of the estimate), so the bootstrap cannot detect it.
+  Normal, basic and bias-corrected intervals computed from the same replicates covered 24 to
+  46 of 72 panels. No form of this bootstrap fixes it.
+- **Fix: a region-bounded interval for the overall rate.** It takes the in-region interval
+  and assumes nothing outside the region: lower limit `lo * share`, upper limit
+  `hi * share + (1 - share)`. It covers whenever the in-region interval does, so the 72/72
+  is expected by construction. It is honest but wide (median 15.8 points, because about 15%
+  of items lie outside the region). The study report now leads with the in-region rate and
+  its interval and gives the overall rate with this interval and the worst-case bounds
+  (DESIGN 14, deviation 22).
+
+These checks use independent models without trick items. With shared blind spots
+(`tricks`, section 3.1) the in-region rate itself is about 2 points too high, and its
+interval would not cover; only labels detect that.
 
 ## 4. Limitations
 
@@ -273,10 +311,12 @@ interval that ignores the bias will under-cover even if the bootstrap itself is 
   weak.
 - **Untested on real data.** The leaderboard details adapter and the GPQA and BBH matrix
   construction have never read a real repository.
-- **One independent audit, partly addressed.** The audit of 2026-10-24 checked the
-  label-only numbers, the joins and this report against `results/`. Its two model-estimator
-  findings (calibrated-estimator bias, item-bootstrap coverage) are not fixed, and the fixes
-  made after it have not been re-audited.
+- **One independent audit, addressed but the last fixes not re-audited.** The audit of
+  2026-10-24 checked the label-only numbers, the joins and this report against `results/`.
+  A re-verification confirmed the fixes for findings 1-4 and 7. The fixes for findings 5
+  (one score function) and 6 (item-bootstrap coverage, region-bounded overall interval) came
+  later and have not been re-audited. The item-bootstrap coverage is measured on one
+  scenario (independent models) at a smaller panel size than DESIGN 7.2.
 
 ## 5. Reproducing
 
@@ -288,4 +328,12 @@ uv run keyaudit report --config configs/study.toml
 ```
 
 Rerunning `simulate` into an existing run directory reuses its finished units, including the
-pigeonhole coverage units. Use a new `--out` directory to measure item-bootstrap coverage.
+pigeonhole coverage units. The item-bootstrap coverage runs of section 3.3:
+
+```sh
+uv run keyaudit simulate --profile coverage --seed 20261024 --out runs/items-cov-v1 --results results/items-cov-v1 --workers 3
+uv run keyaudit simulate --profile coverage --seed 20261025 --out runs/items-cov-v2 --results results/items-cov-v2 --workers 3
+```
+
+Units from seed 20261024 were written before the region-bounded interval existed and do
+not record it; rerunning into a fresh directory with the current code does.

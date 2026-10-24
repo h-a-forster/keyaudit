@@ -5,10 +5,19 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-Fixes from the independent audit of 2026-10-24 (findings 1-4 and 7, and the wording of 6;
-finding 5 and the item-bootstrap coverage of 6 remain open).
+Fixes from the independent audit of 2026-10-24 (findings 1-7; the fixes for 5 and 6 have not
+been re-audited).
 
 ### Changed
+
+- Calibrated estimator: unlabeled items get the average of the cross-fitted fold maps
+  instead of a full-fit map, so one score function is used throughout (audit finding 5).
+  The mixed form was biased +0.14 points with 50 labeled items; negligible at 25% labels.
+- Item-bootstrap coverage measured (new `coverage` simulation profile): the overall-rate
+  percentile interval covers 34/72 and 35/72 (the rate is about 1 point low outside the
+  competence region), the in-region interval 72/72. The report now gives the overall rate
+  with a region-bounded interval (72/72, median width 15.8 points) and leads with the
+  in-region rate (audit finding 6).
 
 - Label-only intervals floor each stratum's variance at its category's pooled labeled
   variance; the previous interval covered ~86% in a simulation of the actual design. New:

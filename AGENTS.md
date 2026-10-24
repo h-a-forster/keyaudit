@@ -93,8 +93,8 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24 (v0.1.0 build; independent audit received, findings 1-4 and 7 fixed,
-6 partly).
+Updated: 2026-10-24 (v0.1.0 build; independent audit received; findings 1-4 and 7 fixed and
+re-verified; 5 and 6 fixed afterwards, not re-audited).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -161,25 +161,34 @@ its own commit, from cached data only (no model calls):
   Redux-`ok` corrected items are 6 distinct Redux rows. The generated `tables.md` still
   counts 23 normalised-text changes.
 - Finding 7: labeled-item count 2,893 in AGENTS.md and DESIGN.
-- Finding 6, wording only: REPORT 3.3 now gives the old bootstrap's median limits (2.2%,
-  24.3%) instead of "2-3x". Item-bootstrap coverage is still unmeasured (below).
+- Finding 6, wording: REPORT 3.3 gives the old bootstrap's median limits (2.2%, 24.3%)
+  instead of "2-3x".
+- Finding 5: `cross_fitted_calibration` gives unlabeled items the average of the fold maps
+  (one score function; DESIGN 14 deviation 21). The mixed form was biased +0.14
+  [+0.08, +0.20] points with 50/1,000 labeled (slow seeded test; the new form +0.03
+  [-0.02, +0.08]). The audit's -0.30 in `tricks` is label-draw noise: the same 10 draws give
+  -0.30 under both forms; 22 panels x 100 draws give -0.00 [-0.02, +0.02] (old) and +0.00
+  [-0.02, +0.02] (new). simulation-v1 not rerun.
+- Finding 6, coverage: `--profile coverage` (72 panels 1000 x 60, B = 20, ~15 min on 3
+  workers), seeds 20261024 / 20261025 (`results/items-cov-v1`, `-v2`). Percentile overall
+  34/72 and 35/72 (bias about -0.95 points from outside the region, invisible to the
+  bootstrap; normal/basic/BC 24-46/72); in-region 72/72 twice. Fix: region-bounded overall
+  interval (`estimate.region_bounded_interval`), 72/72 on the fresh seed, median width 15.8
+  points; the report leads with the in-region rate (DESIGN 14 deviation 22). Measured only
+  for independent models without tricks.
 - Finding 8 (info): 4 worker processes ran at once during the v1 runs; no effect on results.
-The fixes have not been re-audited.
+Findings 1-4 and 7 were re-verified on 2026-10-24; the fixes for 5 and 6 were not.
 
 Remaining:
-1. Audit finding 5 (open): the calibrated estimator's bias of -0.30 [-0.57, -0.03] points in
-   `tricks` comes from mixing cross-fitted scores for labeled items with full-fit scores for
-   the population mean (`estimate.py`, calibrated estimate). Use one fixed score function.
-2. Audit finding 6 (wording fixed in REPORT 3.3: median upper limit 24.3% against 3.1% true;
-   still open:) Measure item-bootstrap coverage in a fresh run
-   directory (the default profile takes about 30 min of coverage units on 3 workers). Decide whether the model-rate interval needs a
-   bias correction (the estimator is about 1 point low on 1000 x 60 panels).
+1. Re-audit the fixes for findings 5 and 6.
+2. Optional: rerun simulation-v1 (scenario units) with the one-function calibrated
+   estimator, and measure item-bootstrap coverage in the `weak` and `families` scenarios
+   and at the DESIGN 7.2 size (not done; the in-region interval may be conservative).
 3. Run `pytest --runslow` on the v0.1.0 code.
-4. Re-audit the post-audit fixes (findings 1-4, 7).
-5. Owner action: accept the gates for the repositories in `results/study-v1/access.csv` and
+4. Owner action: accept the gates for the repositories in `results/study-v1/access.csv` and
    provide a token, then run `scripts/probe_details.py`, the full study and the report, and
    update REPORT.md with model-based, calibrated and validation results.
-6. Tag v0.1.0 and publish only after the audit and with the owner's go-ahead.
+5. Tag v0.1.0 and publish only after the audit and with the owner's go-ahead.
 
 Open questions for the owner:
 - Provide a token and accept gates for the ~100-150 candidate repositories (list produced by
