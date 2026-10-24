@@ -99,7 +99,7 @@ Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
   gated (auto-approval, per repository, no API to accept); MMLU-Pro key revisions
   fingerprinted (54 key-text changes since July 2024); Redux overlap with MMLU-Pro measured
-  (2,879 items, 56 narrow / 97 broad positives at revision 014c8cf5); Platinum counts; byte-range
+  (2,893 items, 56 narrow / 97 broad positives at revision 014c8cf5); Platinum counts; byte-range
   projection through the Hub works.
 - `stats` (intervals, Holm/BH, Bayesian FDR, stratified difference estimator) and
   `study.config` with reference-value tests.

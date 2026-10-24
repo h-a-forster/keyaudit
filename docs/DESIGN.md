@@ -124,8 +124,9 @@ attribution (CC-BY-4.0) only if needed for reproducibility.
   106, `multiple_correct_answers` 39, `no_correct_answer` 36, `expert` 32,
   `bad_options_clarity` 25.
 - Join of MMLU-Pro `ori_mmlu-<subject>` to Redux by subject and normalised question text
-  (revision `014c8cf5`): 2,902 unique items in 56 subjects (20-91 per subject); 2,879 with the
-  same key text in both; among those `wrong_groundtruth` 56, `multiple_correct_answers` 24,
+  (revision `014c8cf5`): 2,893 labelled MMLU-Pro items in 56 subjects with the same key text
+  in both (the scaffold first counted 2,902 / 2,879 per Redux row; corrected in section 14,
+  item 2); among those `wrong_groundtruth` 56, `multiple_correct_answers` 24,
   `no_correct_answer` 17 (broad positives 97). For the 3 items Redux marks wrong whose
   MMLU-Pro key differs from MMLU's, MMLU-Pro adopted Redux's correction.
 - Platinum: `bbh_logical_deduction_three_objects` 200 (0 rejected), `bbh_navigate` 200
@@ -351,7 +352,7 @@ labels).
 
 ### 7.3 Validation against humans (M4)
 
-- **MMLU-Redux 2.0 overlap** (about 2,879 items, 56 narrow and 97 broad positives): AP and
+- **MMLU-Redux 2.0 overlap** (2,893 items, 56 narrow and 97 broad positives): AP and
   ROC AUC with stratified bootstrap intervals (2,000 resamples); precision@k and recall@k,
   k in {25, 50, 100, 200}; precision and recall at q <= 0.10 with Clopper-Pearson intervals;
   paired bootstrap AP difference vs each baseline, Holm-adjusted. Breakdowns: recall by
