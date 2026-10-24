@@ -87,6 +87,51 @@ def test_cross_fitting_leaves_own_label_out() -> None:
         estimate.cross_fitted_calibration(s[:3], np.array([0.0, 1.0, np.nan]), 5, 0)
 
 
+def test_unlabeled_items_use_the_fold_average_not_a_full_fit() -> None:
+    """Audit finding 5: one score function for the population mean and the labeled residuals.
+
+    Unlabeled items get the average of the K fold maps (each fitted on (K-1)/K of the labels),
+    not a map fitted on all labels.
+    """
+    rng = np.random.default_rng(2)
+    s = rng.uniform(0.01, 0.99, 300)
+    labels = np.full(300, np.nan)
+    labels[:60] = (rng.random(60) < s[:60]).astype(float)
+    f = estimate.cross_fitted_calibration(s, labels, folds=5, seed=3)
+    idx = np.arange(60)
+    fold = np.empty(60, dtype=int)
+    fold[np.random.default_rng([3, 7]).permutation(60)] = np.arange(60) % 5
+    maps = [estimate.platt_fit(s[idx[fold != k]], labels[idx[fold != k]]) for k in range(5)]
+    expect = np.mean([estimate.platt_apply(s[60:], p) for p in maps], axis=0)
+    np.testing.assert_allclose(f[60:], expect, rtol=1e-12)
+    full = estimate.platt_apply(s[60:], estimate.platt_fit(s[:60], labels[:60]))
+    assert not np.allclose(f[60:], full)
+
+
+@pytest.mark.slow
+def test_calibrated_estimator_unbiased_with_few_labels() -> None:
+    """Audit finding 5: seeded check that the difference estimator is unbiased when the labeled
+    set is small (50 of 1,000 items, about 2.5 positives). The previous mix of cross-fitted
+    scores (labeled) and full-fit scores (population) gave +0.14 [+0.08, +0.20] points here
+    over these 6,000 draws; the one-function form gives +0.03 [-0.02, +0.08]."""
+    from keyaudit import stats
+
+    errs = np.empty(6000)
+    for r in range(errs.size):
+        rng = np.random.default_rng([2, r])
+        y = rng.random(1000) < 0.05
+        s = np.where(y, rng.beta(3, 2, 1000), rng.beta(1, 8, 1000))
+        labels = np.full(1000, np.nan)
+        pick = rng.permutation(1000)[:50]
+        labels[pick] = y[pick]
+        lab = ~np.isnan(labels)
+        f = estimate.cross_fitted_calibration(s, labels, 5, r)
+        est = stats.stratified_difference_estimate(f, lab, np.where(lab, labels, 0.0))
+        errs[r] = est.estimate - y.mean()
+    half = 3.0 * errs.std(ddof=1) / np.sqrt(errs.size)
+    assert abs(errs.mean()) < half
+
+
 def test_collapse_strata() -> None:
     fine = np.array(["a"] * 30 + ["b"] * 5 + ["c"] * 5 + ["d"] * 3)
     coarse = np.array(["X"] * 30 + ["Y"] * 10 + ["Z"] * 3)

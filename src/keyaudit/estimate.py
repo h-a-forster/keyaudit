@@ -8,8 +8,9 @@
    section 14, deviation 20).
 2. Label-calibrated (headline where labels exist): the stratified difference estimator of
    :func:`keyaudit.stats.stratified_difference_estimate` with cross-fitted Platt-calibrated
-   scores ``f_i`` on the population and labels on the random labeled sample; a stratified
-   bootstrap interval is reported next to the normal one because positives are rare.
+   scores ``f_i`` on the population (fold maps for labeled items, their average elsewhere)
+   and labels on the random labeled sample; a stratified bootstrap interval is reported next
+   to the normal one because positives are rare.
 3. Transfer estimate for unlabeled sources: mean calibrated score, with a bootstrap over the
    labeled set for calibration uncertainty; reported as an extrapolation.
 4. Partial-identification bounds: :func:`keyaudit.identifiability.worst_case_bounds`.
@@ -154,10 +155,17 @@ def platt_apply(scores: ArrayLike, params: tuple[float, float]) -> NDArray[np.fl
 def cross_fitted_calibration(
     scores: ArrayLike, labels: ArrayLike, folds: int, seed: int
 ) -> NDArray[np.float64]:
-    """Platt-calibrated scores for labeled items from the other folds; full fit for the rest.
+    """Cross-fitted Platt-calibrated scores: one score function for every item.
 
-    ``labels`` is 0/1 for labeled items and NaN for unlabeled ones. The calibrated value of a
-    labeled item never uses its own label.
+    ``labels`` is 0/1 for labeled items and NaN for unlabeled ones. The labeled items are split
+    into ``folds`` folds and a calibration map ``g_k`` is fitted on all folds but ``k``. A labeled
+    item in fold ``k`` gets ``g_k(s_i)``, so its calibrated value never uses its own label; an
+    unlabeled item gets the fold average ``mean_k g_k(s_i)`` (cross-prediction-powered inference,
+    Zrnic and Candes 2024). Each item's value thus comes from maps fitted on the same number of
+    labels, none of them its own, so the population mean and the labeled residuals of the
+    difference estimator use the same score function. (Up to 0.1.0 unlabeled items used a map
+    fitted on all labels, which biased the estimate when the labeled set is small; audit
+    finding 5, DESIGN 14 deviation 21.)
     """
     s = np.asarray(scores, dtype=float)
     lab = np.asarray(labels, dtype=float)
@@ -166,14 +174,16 @@ def cross_fitted_calibration(
     if idx.size < folds:
         raise ValueError("fewer labeled items than folds")
     out = np.empty(s.size)
-    out[~is_lab] = platt_apply(s[~is_lab], platt_fit(s[idx], lab[idx]))
+    out[~is_lab] = 0.0
     rng = np.random.default_rng([seed, 7])
     fold = np.empty(idx.size, dtype=int)
     fold[rng.permutation(idx.size)] = np.arange(idx.size) % folds
     for k in range(folds):
         test = idx[fold == k]
         train = idx[fold != k]
-        out[test] = platt_apply(s[test], platt_fit(s[train], lab[train]))
+        params = platt_fit(s[train], lab[train])
+        out[test] = platt_apply(s[test], params)
+        out[~is_lab] += platt_apply(s[~is_lab], params) / folds
     return out
 
 
