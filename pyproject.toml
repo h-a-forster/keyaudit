@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "keyaudit"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Calibrated estimates of benchmark answer-key error rates from model-response panels, with a ranked list of suspect items, validated against human relabels."
 readme = "README.md"
 license = "MIT"

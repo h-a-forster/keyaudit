@@ -10,7 +10,7 @@ authors:
   - name: keyaudit contributors
 repository-code: "https://github.com/h-a-forster/keyaudit"
 license: MIT
-version: 0.1.0.dev0
+version: 0.1.0
 keywords:
   - llm evaluation
   - benchmark label errors
