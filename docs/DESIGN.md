@@ -251,8 +251,12 @@ logs to `runs/<name>/progress.log`.
   and options, and `filtered_resps`; parse per-option log-likelihoods. Exact column names
   are confirmed on the first readable repository and fixed in a test fixture.
 - Response: argmax over options of log-likelihood (MMLU-Pro `acc`), or of log-likelihood
-  divided by the continuation's byte length where the metric is `acc_norm` (GPQA choices
-  "(A)".."(D)" have equal length, so it equals `acc`; BBH needs the normalisation).
+  divided by the choice's length in characters where the metric is `acc_norm` (as
+  lm-evaluation-harness does; GPQA choices "(A)".."(D)" have equal length, so it equals
+  `acc`; BBH needs the normalisation). MMLU-Pro items carry one log-likelihood per option
+  (3 to 10) and the key is the scored `target` letter (it disagrees with `answer_index` on
+  one item). Confirmed on real repositories 2026-10-24: recomputed scores equal the
+  harness's per-sample `acc`/`acc_norm` and the reported scores.
 - Adapter gate: our recomputed per-model correct count equals the leaderboard's reported raw
   score x item count exactly (contents table and the repo's `results_*.json`). A model that
   fails is excluded and listed; more than 5% failures stops the study.

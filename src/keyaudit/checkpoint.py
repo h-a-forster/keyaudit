@@ -331,20 +331,33 @@ def run_units(
                 queue.append(by_id[uid])
         return statuses
 
-    with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker) as pool:
-        futs: dict[Future[tuple[dict[str, Any], float]], str] = {}
-        for uid, fn, kw in pending:
-            futs[pool.submit(_call, fn, kw)] = uid
-        while futs:
-            finished, _ = wait(futs, return_when=FIRST_COMPLETED)
-            for fut in finished:
-                uid = futs.pop(fut)
-                try:
-                    res, secs = fut.result()
-                    again = finish(uid, res, secs, None)
-                except Exception as exc:  # noqa: BLE001 - recorded and retried
-                    again = finish(uid, None, 0.0, exc)
-                if again:
-                    _, fn, kw = by_id[uid]
-                    futs[pool.submit(_call, fn, kw)] = uid
+    # Workers inherit the BLAS limits from the environment at spawn: numpy and scipy are
+    # imported (with this module) before ``_init_worker`` runs, and OpenBLAS sizes its
+    # buffers at import, so setting them only in the initializer left each worker with
+    # about 1 GB of committed memory and a full-width thread pool until the first unit.
+    saved_env = {var: os.environ.get(var) for var in _BLAS_ENV}
+    os.environ.update(dict.fromkeys(_BLAS_ENV, "1"))
+    try:
+        with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker) as pool:
+            futs: dict[Future[tuple[dict[str, Any], float]], str] = {}
+            for uid, fn, kw in pending:
+                futs[pool.submit(_call, fn, kw)] = uid
+            while futs:
+                finished, _ = wait(futs, return_when=FIRST_COMPLETED)
+                for fut in finished:
+                    uid = futs.pop(fut)
+                    try:
+                        res, secs = fut.result()
+                        again = finish(uid, res, secs, None)
+                    except Exception as exc:  # noqa: BLE001 - recorded and retried
+                        again = finish(uid, None, 0.0, exc)
+                    if again:
+                        _, fn, kw = by_id[uid]
+                        futs[pool.submit(_call, fn, kw)] = uid
+    finally:
+        for var, val in saved_env.items():
+            if val is None:
+                os.environ.pop(var, None)
+            else:
+                os.environ[var] = val
     return statuses

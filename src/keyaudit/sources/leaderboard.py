@@ -4,19 +4,27 @@ Panel selection from ``open-llm-leaderboard/contents`` (ungated, pinned revision
 extraction of per-item responses from ``open-llm-leaderboard/<org>__<model>-details``:
 for each task (``leaderboard_mmlu_pro``, ``leaderboard_gpqa_extended``,
 ``leaderboard_bbh_{logical_deduction_three_objects,navigate,object_counting}``) read
-``doc_id``, the item id inside ``doc``, the key and ``filtered_resps`` (per-option
-log-likelihoods) from the parquet conversion of the ``latest`` split. The response is the
-argmax of the per-option log-likelihood, length-normalised where the leaderboard metric is
-``acc_norm``.
+``doc_id``, the item id inside ``doc``, the key, ``filtered_resps`` (per-option
+log-likelihoods) and the harness's own per-sample score from the parquet conversion of the
+``latest`` split. The response is the argmax of the per-option log-likelihood, divided by
+the choice's length in characters where the leaderboard metric is ``acc_norm`` (as
+lm-evaluation-harness does).
 
 Adapter gate (must pass before any number is reported): the per-model correct count
 recomputed from our parsed responses and the key embedded in the details must equal the
 leaderboard's reported score times the item count, to the nearest integer.
 
-The column layout follows the lm-evaluation-harness per-sample format. It could not be
-checked against a real details repository when this was written (all are gated, see
-DESIGN 3.1); ``tests/test_leaderboard.py`` pins the assumed layout and the first readable
-repository must confirm it (``scripts/probe_details.py``).
+Layout confirmed on real repositories (2026-10-24, ``scripts/probe_details.py``): one
+parquet file per (model, task); ``doc`` is a struct (MMLU-Pro: ``question_id``,
+``options``, ``answer``, ``answer_index``, ...; GPQA: ``Record ID`` among ~75 fields; BBH:
+``input``, ``target``); ``target`` is a string (MMLU-Pro: the answer letter; GPQA and BBH
+ld3: ``"(A)"``...; navigate: ``"Yes"``/``"No"``; object counting: ``"0"``..``"18"``);
+``filtered_resps`` is ``[[loglik, is_greedy], ...]`` as strings, one entry per choice
+(MMLU-Pro: one per option of the item, 3 to 10); the score column is ``acc`` or
+``acc_norm``. The ``arguments`` struct repeats the full prompt once per choice (most of the
+file's bytes) and is never read. MMLU-Pro's key is the ``target`` letter, which is what the
+harness scored; it disagrees with ``answer_index`` on a few items (counted in the unit
+metadata).
 """
 
 from __future__ import annotations
@@ -56,7 +64,7 @@ class TaskSpec:
     benchmark: str
     task: str
     metric: str  # "acc" or "acc_norm"
-    choices: tuple[str, ...]  # continuation strings scored by the harness
+    choices: tuple[str, ...]  # continuation strings scored by the harness (MMLU-Pro: up to)
     doc_fields: tuple[str, ...]  # doc sub-fields read from the parquet
 
 
@@ -281,6 +289,9 @@ def stable_id(text: str) -> int:
 
 def _key_index(spec: TaskSpec, target: Any, doc: dict[str, Any]) -> int:
     if spec.benchmark == "mmlu_pro":
+        t = "" if target is None else str(target).strip()
+        if len(t) == 1 and t in spec.choices:
+            return spec.choices.index(t)  # the letter the harness scored against
         return int(doc["answer_index"])
     if isinstance(target, int | np.integer):
         return int(target)
@@ -295,11 +306,14 @@ def _key_index(spec: TaskSpec, target: Any, doc: dict[str, Any]) -> int:
 
 def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, NDArray[Any]]:
     """Unit arrays from parsed sample rows (dicts with ``doc_id``, ``doc``, ``target``,
-    ``filtered_resps``).
+    ``filtered_resps`` and optionally ``harness``, the harness's per-sample 0/1 score).
 
-    Arrays: ``item_id`` (int64), ``doc_id``, ``key`` (index), ``response`` (argmax index,
-    ``-1`` if the choice lies beyond the item's options), ``loglik`` float32 ``[n, K]`` NaN
-    padded, ``n_options``, and for MMLU-Pro ``opt_hash`` (text hashes of the doc's options).
+    MMLU-Pro items carry one log-likelihood per option of the item (3 to 10); every other
+    task exactly ``len(spec.choices)``. Arrays: ``item_id`` (int64), ``doc_id``, ``key``
+    (index), ``response`` (argmax index), ``loglik`` float32 ``[n, K]`` NaN padded,
+    ``n_options``, ``harness_correct`` (int8, ``-1`` where absent), and for MMLU-Pro
+    ``opt_hash`` (text hashes of the doc's options) and ``answer_index`` (the doc's own
+    index, which can disagree with the scored ``target`` letter).
     """
     n = len(rows)
     k_max = MAX_OPTIONS if spec.benchmark == "mmlu_pro" else len(spec.choices)
@@ -308,17 +322,24 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
     key = np.zeros(n, dtype=np.int64)
     resp = np.full(n, -1, dtype=np.int64)
     n_opt = np.zeros(n, dtype=np.int64)
-    ll = np.full((n, max(k_max, len(spec.choices))), np.nan, dtype=np.float32)
+    ll = np.full((n, k_max), np.nan, dtype=np.float32)
     opt_hash = np.zeros((n, k_max), dtype=np.int64)
-    lengths = np.array([len(c.encode("utf-8")) + 1 for c in spec.choices], dtype=float)
+    ans_idx = np.full(n, -1, dtype=np.int64)
+    harness = np.full(n, -1, dtype=np.int8)
+    # lm-evaluation-harness acc_norm: log-likelihood divided by len(choice) in characters
+    lengths = np.array([len(c) for c in spec.choices], dtype=float)
     for r, row in enumerate(rows):
         doc = row["doc"]
         doc_id[r] = int(row["doc_id"])
         if spec.benchmark == "mmlu_pro":
             item_id[r] = int(doc["question_id"])
             opts = list(doc["options"])
+            if not 1 <= len(opts) <= k_max:
+                raise ValueError(f"{spec.task} doc {doc_id[r]}: {len(opts)} options")
             n_opt[r] = len(opts)
             opt_hash[r, : len(opts)] = [text_hash(o) for o in opts]
+            if doc.get("answer_index") is not None:
+                ans_idx[r] = int(doc["answer_index"])
         elif spec.benchmark == "gpqa":
             item_id[r] = stable_id(str(doc["Record ID"]))
             n_opt[r] = len(spec.choices)
@@ -326,16 +347,19 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
             item_id[r] = stable_id(str(doc["input"]))
             n_opt[r] = len(spec.choices)
         key[r] = _key_index(spec, row.get("target"), doc)
+        if not 0 <= key[r] < n_opt[r]:
+            raise ValueError(f"{spec.task} doc {doc_id[r]}: key {key[r]} beyond {n_opt[r]} options")
         lls = np.asarray(parse_loglik(row["filtered_resps"]), dtype=float)
-        if lls.size != len(spec.choices):
+        if lls.size != n_opt[r]:
             raise ValueError(
-                f"{spec.task} doc {doc_id[r]}: {lls.size} log-likelihoods, "
-                f"expected {len(spec.choices)}"
+                f"{spec.task} doc {doc_id[r]}: {lls.size} log-likelihoods, expected {n_opt[r]}"
             )
         ll[r, : lls.size] = lls
-        score = lls / lengths if spec.metric == "acc_norm" else lls
-        choice = int(np.argmax(score))
-        resp[r] = choice if choice < n_opt[r] else -1
+        score = lls / lengths[: lls.size] if spec.metric == "acc_norm" else lls
+        resp[r] = int(np.argmax(score))
+        h = row.get("harness")
+        if h is not None and np.isfinite(float(h)):
+            harness[r] = int(float(h) > 0.5)
     out: dict[str, NDArray[Any]] = {
         "item_id": item_id,
         "doc_id": doc_id,
@@ -343,14 +367,26 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
         "response": resp,
         "loglik": ll,
         "n_options": n_opt,
+        "harness_correct": harness,
     }
     if spec.benchmark == "mmlu_pro":
         out["opt_hash"] = opt_hash
+        out["answer_index"] = ans_idx
     return out
 
 
 def n_correct(arrays: dict[str, NDArray[Any]]) -> int:
     return int(np.sum(arrays["response"] == arrays["key"]))
+
+
+def harness_mismatches(arrays: dict[str, NDArray[Any]]) -> int:
+    """Items where our 0/1 correctness differs from the harness's own per-sample score."""
+    h = arrays.get("harness_correct")
+    if h is None:
+        return 0
+    have = h >= 0
+    ours = (arrays["response"] == arrays["key"]).astype(np.int8)
+    return int(np.sum(ours[have] != h[have]))
 
 
 def adapter_gate(n_corr: int, n_items: int, reported_acc: float) -> bool:
@@ -395,6 +431,7 @@ def _rows_from_table(table: Any, spec: TaskSpec) -> list[dict[str, Any]]:
                 "doc": doc,
                 "target": d["target"][r] if "target" in d else None,
                 "filtered_resps": d["filtered_resps"][r],
+                "harness": d[spec.metric][r] if spec.metric in d else None,
             }
         )
     return rows
@@ -422,7 +459,7 @@ def fetch_responses(
     doc_cols = [f"doc.{f}" for f in spec.doc_fields]
     if benchmark == "gpqa":
         doc_cols = ["doc.Record ID"]
-    columns = ["doc_id", "target", "filtered_resps", *doc_cols]
+    columns = ["doc_id", "target", "filtered_resps", spec.metric, *doc_cols]
     tables = []
     stats = {"bytes_fetched": 0, "requests": 0, "remote_size": 0}
     for url in listing:
@@ -444,6 +481,11 @@ def fetch_responses(
         "files": len(listing),
         "n_items": len(rows),
         "n_correct": n_correct(arrays),
+        "n_correct_harness": int(np.sum(arrays["harness_correct"] == 1)),
+        "harness_mismatches": harness_mismatches(arrays),
+        "answer_index_differs": (
+            int(np.sum(arrays["answer_index"] != arrays["key"])) if "answer_index" in arrays else 0
+        ),
         **stats,
         "versions": hub.library_versions(),
     }

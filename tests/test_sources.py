@@ -1,8 +1,9 @@
 """MMLU-Pro revision handling, Redux join, leaderboard sample parsing and the panel rule.
 
-The leaderboard fixtures follow the lm-evaluation-harness per-sample layout (``doc_id``,
-``doc``, ``target``, ``filtered_resps`` with ``[loglik, is_greedy]`` per option). They are
-constructed, not recorded: the details repositories are gated (DESIGN 3.1).
+The leaderboard fixtures follow the per-sample layout confirmed on real details
+repositories (``doc_id``, a ``doc`` struct, ``target`` string, ``filtered_resps`` with
+``[loglik, is_greedy]`` strings per choice, ``acc``/``acc_norm``). They are synthetic: no
+real sample content is committed.
 """
 
 from __future__ import annotations
@@ -185,30 +186,110 @@ def test_parse_mmlu_pro_samples() -> None:
     opts4 = ["w", "x", "y", "z"]
     ll_a = [-5.0] * 10
     ll_a[2] = -0.1  # picks C
-    ll_b = [-5.0] * 10
-    ll_b[7] = -0.1  # picks H, beyond a 4-option item -> invalid
     rows = [
         {
             "doc_id": 0,
             "doc": {"question_id": 70, "answer_index": 2, "options": list("abcdefghij")},
             "target": "C",
             "filtered_resps": _lls(ll_a),
+            "harness": 1.0,
         },
-        {
+        {  # a 4-option item has 4 log-likelihoods (real data: 3 to 10 options)
             "doc_id": 1,
             "doc": {"question_id": 71, "answer_index": 1, "options": opts4},
             "target": "B",
-            "filtered_resps": _lls(ll_b),
+            "filtered_resps": _lls([-0.2, -3.0, -4.0, -5.0]),
+            "harness": 0.0,
         },
     ]
     a = leaderboard.parse_samples(spec, rows)
     assert a["item_id"].tolist() == [70, 71]
     assert a["key"].tolist() == [2, 1]
-    assert a["response"].tolist() == [2, -1]
+    assert a["response"].tolist() == [2, 0]
     assert a["n_options"].tolist() == [10, 4]
     assert a["opt_hash"][1, 4] == 0 and a["opt_hash"][1, 0] == text_hash("w")
+    assert np.isnan(a["loglik"][1, 4:]).all() and a["loglik"].shape == (2, 10)
     assert a["loglik"].dtype == np.float32
     assert leaderboard.n_correct(a) == 1
+    assert a["harness_correct"].tolist() == [1, 0]
+    assert leaderboard.harness_mismatches(a) == 0
+
+
+@pytest.mark.parametrize("n_opt", [3, 7, 9])
+def test_mmlu_pro_option_count_from_item(n_opt: int) -> None:
+    spec = leaderboard.SPECS["mmlu_pro"]
+    lls = [-4.0] * n_opt
+    lls[-1] = -0.3
+    letter = "ABCDEFGHIJ"[n_opt - 1]
+    row = {
+        "doc_id": 5,
+        "doc": {
+            "question_id": 9,
+            "answer_index": n_opt - 1,
+            "options": [f"o{i}" for i in range(n_opt)],
+        },
+        "target": letter,
+        "filtered_resps": _lls(lls),
+    }
+    a = leaderboard.parse_samples(spec, [row])
+    assert a["response"].tolist() == [n_opt - 1] and a["key"].tolist() == [n_opt - 1]
+    assert a["harness_correct"].tolist() == [-1]  # no harness column given
+    bad = {**row, "filtered_resps": _lls(lls + [-9.0])}
+    with pytest.raises(ValueError, match=f"{n_opt + 1} log-likelihoods, expected {n_opt}"):
+        leaderboard.parse_samples(spec, [bad])
+
+
+def test_mmlu_pro_key_is_scored_target_letter() -> None:
+    # Real data has items whose answer_index disagrees with the answer letter; the harness
+    # scores against the target letter, so the key follows it and the disagreement is kept.
+    spec = leaderboard.SPECS["mmlu_pro"]
+    row = {
+        "doc_id": 0,
+        "doc": {"question_id": 1, "answer_index": 1, "options": list("pqrstuv")},
+        "target": "C",
+        "filtered_resps": _lls([-5, -7, -0.1, -2, -10, -17, -18]),
+        "harness": 1.0,
+    }
+    a = leaderboard.parse_samples(spec, [row])
+    assert a["key"].tolist() == [2] and a["answer_index"].tolist() == [1]
+    assert leaderboard.n_correct(a) == 1 and leaderboard.harness_mismatches(a) == 0
+
+
+def test_harness_mismatch_counted() -> None:
+    spec = leaderboard.SPECS["bbh_ld3"]
+    rows = [
+        {"doc_id": i, "doc": {"input": f"q{i}"}, "target": "(A)",
+         "filtered_resps": _lls([-1, -2, -3]), "harness": h}
+        for i, h in enumerate([1.0, 0.0])
+    ]  # fmt: skip
+    a = leaderboard.parse_samples(spec, rows)
+    assert leaderboard.harness_mismatches(a) == 1
+
+
+def test_rows_from_real_shaped_table() -> None:
+    """A synthetic pyarrow table with the real column types parses end to end."""
+    import pyarrow as pa
+
+    spec = leaderboard.SPECS["mmlu_pro"]
+    t = pa.table(
+        {
+            "doc_id": pa.array([0, 1], pa.int64()),
+            "target": pa.array(["B", "A"]),
+            "filtered_resps": pa.array(
+                [[["-2.0", "False"], ["-0.5", "True"], ["-3.0", "False"]],
+                 [["-0.1", "True"], ["-2.0", "False"], ["-2.5", "False"], ["-9", "False"]]],
+                pa.list_(pa.list_(pa.string())),
+            ),
+            "acc": pa.array([1.0, 1.0]),
+            "doc": pa.array(
+                [{"question_id": 10, "options": ["a", "b", "c"], "answer_index": 1},
+                 {"question_id": 11, "options": ["a", "b", "c", "d"], "answer_index": 0}],
+            ),
+        }
+    )  # fmt: skip
+    a = leaderboard.parse_samples(spec, leaderboard._rows_from_table(t, spec))
+    assert a["n_options"].tolist() == [3, 4] and a["response"].tolist() == [1, 0]
+    assert leaderboard.n_correct(a) == 2 and leaderboard.harness_mismatches(a) == 0
 
 
 def test_parse_gpqa_hides_text() -> None:
@@ -227,13 +308,24 @@ def test_parse_gpqa_hides_text() -> None:
 
 
 def test_acc_norm_changes_argmax() -> None:
-    spec = leaderboard.SPECS["bbh_navigate"]  # choices "Yes" (3 bytes), "No" (2 bytes)
-    # raw: "No" wins (-2.9 > -3.2); per byte incl. the leading space: Yes -0.8, No -0.97
+    spec = leaderboard.SPECS["bbh_navigate"]  # choices "Yes" (3 chars), "No" (2 chars)
+    # raw: "No" wins (-2.9 > -3.2); per character: Yes -1.07, No -1.45
     rows = [
         {"doc_id": 0, "doc": {"input": "q"}, "target": "Yes", "filtered_resps": _lls([-3.2, -2.9])}
     ]
     a = leaderboard.parse_samples(spec, rows)
     assert a["response"].tolist() == [0] and a["key"].tolist() == [0]
+
+
+def test_acc_norm_divides_by_characters_not_bytes_plus_one() -> None:
+    # lm-evaluation-harness divides by len(choice); with "9" (1 char) vs "10" (2 chars):
+    # per char 9: -1.5, 10: -1.4 -> "10"; per (bytes + 1): 9: -0.75, 10: -0.933 -> "9".
+    spec = leaderboard.SPECS["bbh_object_counting"]
+    lls = [-50.0] * 19
+    lls[9], lls[10] = -1.5, -2.8
+    rows = [{"doc_id": 0, "doc": {"input": "c"}, "target": "10", "filtered_resps": _lls(lls)}]
+    a = leaderboard.parse_samples(spec, rows)
+    assert a["response"].tolist() == [10] and leaderboard.n_correct(a) == 1
 
 
 def test_object_counting_target_is_text() -> None:

@@ -223,3 +223,62 @@ def test_provenance_has_no_token(tmp_path: Path) -> None:
     hub.append_manifest(tmp_path / "m.jsonl", rec)
     text = (tmp_path / "m.jsonl").read_text(encoding="utf-8")
     assert "org/repo" in text and TOKEN not in text and "bytes_fetched" in text
+
+
+def test_projection_prefetches_column_chunks_concurrently() -> None:
+    data = _parquet_bytes()
+    seen: list[httpx.Request] = []
+    _range_server(data, seen)
+    remote = hub.RemoteFile("org/repo", "dataset", "a" * 40, "x.parquet", len(data), None)
+    cols = ["doc_id", "doc.question_id", "filtered_resps"]
+    table, st = hub.read_parquet_columns(remote, cols, budget_bytes=len(data))
+    md = pq.ParquetFile(io.BytesIO(data)).metadata
+    ranges = hub.column_chunk_ranges(md, cols)
+    assert len(ranges) == 2 * 3  # two row groups x three leaves; never "doc.text"/"arguments"
+    wanted = sum(b - a for a, b in ranges)
+    assert st["bytes_fetched"] < wanted + 4 * 64 * 1024  # chunks plus the footer reads
+    assert st["requests"] <= 2 + 4  # footer reads plus at most one request per merged range
+    assert table.column("filtered_resps").to_pylist()[0][0][1] == "False"
+
+
+def test_prefetch_respects_budget_before_requesting() -> None:
+    data = bytes(1000)
+    seen: list[httpx.Request] = []
+    _range_server(data, seen)
+    rf = hub.RangeFile("https://example.test/f", len(data), budget=500)
+    with pytest.raises(hub.BudgetExceeded):
+        rf.prefetch([(0, 300), (600, 900)], gap=0)
+    assert seen == []
+
+
+def test_rangefile_uses_redirect_target_directly_and_falls_back() -> None:
+    data = bytes(range(256)) * 40
+    hub_hits, cdn_hits = [], []
+    state = {"expired": False}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.host == "hub.test":
+            hub_hits.append(req)
+            return httpx.Response(302, headers={"Location": "https://cdn.test/signed?x=1"})
+        cdn_hits.append(req)
+        assert "Authorization" not in req.headers  # the token never goes to the CDN
+        if state["expired"]:
+            return httpx.Response(403)
+        a, b = req.headers["Range"].removeprefix("bytes=").split("-")
+        return httpx.Response(
+            206,
+            content=data[int(a) : int(b) + 1],
+            headers={"Content-Range": f"bytes {a}-{b}/{len(data)}"},
+        )
+
+    _serve(handler)
+    rf = hub.RangeFile("https://hub.test/f", len(data), token=TOKEN, min_block=100)
+    assert rf.read(10) == data[:10]
+    rf.seek(5000)
+    assert rf.read(10) == data[5000:5010]
+    assert len(hub_hits) == 1 and len(cdn_hits) == 2
+    state["expired"] = True
+    rf.seek(8000)
+    with pytest.raises(hub.AccessDenied):  # expired signature: back through the Hub, still 403
+        rf.read(10)
+    assert len(hub_hits) == 2
