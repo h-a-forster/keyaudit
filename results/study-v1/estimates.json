@@ -125,6 +125,26 @@
         ]
       }
     },
+    "mmlu_derived_model_only": {
+      "estimand": "model-only flag rate (mean posterior), not a key-error rate",
+      "n_items": 6806,
+      "overall": 0.22953783040837955,
+      "overall_ci_fixed_fit": [
+        0.22077034634939322,
+        0.2385582963522258
+      ],
+      "region_share": 0.8263297090802233,
+      "region_rate": 0.21109944091007882,
+      "region_ci_fixed_fit": [
+        0.20104145704081333,
+        0.2211719931250048
+      ],
+      "overall_bounded_ci": [
+        0.16612652870959949,
+        0.35643127965545507
+      ],
+      "n_boot": 2000
+    },
     "label_calibrated_narrow": {
       "estimand": "E_label narrow, MMLU-derived items",
       "estimate": 0.014214801267819765,

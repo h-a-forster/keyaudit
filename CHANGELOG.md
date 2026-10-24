@@ -9,9 +9,9 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The model stages ran on 100 readable leaderboard models (96 after the adapter gate and
   dedupe). Headline (MMLU-Pro, MMLU-derived items, label-calibrated): narrow 1.42%
-  [0.78%, 2.07%], broad 3.91% [2.62%, 5.19%]. The model-only rate (22.4% in the competence
-  region, 25.4% overall; GPQA 54%) is inflated by a correlated, weak panel: all 10 strongest
-  models are one family of 44. Suspect ranking AP 0.080 [0.052, 0.142] against Redux wrong
+  [0.78%, 2.07%], broad 3.91% [2.62%, 5.19%]. The model-only flag rate on the same items
+  (22.95%, about 16x; GPQA 54%) is inflated by a correlated, weak panel: the 10 strongest
+  models are all Qwen-based and sit in one answer-agreement cluster of 44. Suspect ranking AP 0.080 [0.052, 0.142] against Redux wrong
   keys (random 0.019; best baseline 0.071). REPORT.md section 3, figures in `docs/figures/`
   (`scripts/make_figures.py`).
 
@@ -22,7 +22,12 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   order by hash; items with duplicate options, differing option sets or differing keyed text
   are dropped (10 of 546, 9 with duplicate options in the leaderboard details).
 - `average_precision` treats tied scores as one threshold; position tie-breaking let the
-  stratified bootstrap inflate AP for tie-heavy baselines.
+  stratified bootstrap inflate AP for tie-heavy baselines. Precision/recall at k use the
+  expected value over random order within tied scores.
+- `validate.operating_point` accepts the flag set; the study evaluates its own flags
+  (q-values over the whole matrix) instead of recomputing q-values on labeled items only.
+- The report adds the model-only flag rate on the MMLU-derived items
+  (`mmlu_derived_model_only`) for comparison with the label-based rate on the same items.
 - The label-calibrated estimator floors each stratum's residual variance at its category's
   pooled labeled residual variance (analogue of the label-only floor).
 

@@ -15,16 +15,19 @@ Figures are drawn from `results/` by `scripts/make_figures.py`.
   option or several correct options (broad). The model scores barely help: the interval is
   as wide as the labels-only one (variance ratio 1.01), so this is in effect the
   labels-only estimate (1.48%, 3.98% on the same items).
-- **A model panel alone overstates the rate 16- to 18-fold.** On 96 Open LLM Leaderboard
-  models the model-only rate for MMLU-Pro is 22.4% [21.3%, 23.4%] on the 78% of items the
-  panel can judge, and 25.4% over all items. For GPQA it is 54%. These are not key-error
+- **A model panel alone flags about 16 times as many items as have a wrong key.** On the
+  same 6,806 MMLU-derived items, the model-only flag rate (mean posterior that the key is
+  wrong, from 96 Open LLM Leaderboard models) is 22.95% over all of them and 21.11% on the
+  83% the panel can judge, against the 1.42% human-label rate (16.1x and 14.9x). Over all
+  12,027 MMLU-Pro items it is 25.4%, and for GPQA 54%. These flag rates are not key-error
   rates. They measure how often the strongest models agree on the same non-key answer:
-  - all 10 strongest models fall in one response-agreement family of 44 of the 96 models;
-    the 10 are Qwen2 / Qwen2.5 base models or fine-tunes (mean pairwise agreement 0.68);
-  - on the MMLU-Pro items the model flags, those 10 models pick the key 10% of the time and
-    one shared other option 61% of the time;
-  - of the 699 labeled items flagged at q <= 0.10, only 34 (4.9%) are wrong keys by the
-    human labels;
+  - the 10 strongest models are all Qwen2 / Qwen2.5 base models or fine-tunes (mean
+    pairwise agreement 0.68) and fall in one cluster of 44 of the 96 models that answer
+    alike; the cluster itself is of mixed lineage (Qwen, Mistral, Falcon, Phi and others);
+  - on the 2,994 MMLU-Pro items with posterior above 0.5, those 10 models pick the key 10%
+    of the time and one shared other option 61% of the time;
+  - of the 667 labeled items among the study's flags (q <= 0.10), only 33 (4.9%) are wrong
+    keys by the human labels;
   - GPQA is near chance for this panel (median accuracy 0.31, best 0.44, chance 0.25).
 
   This is the shared-blind-spot case the identifiability result predicts (DESIGN 5.2): from
@@ -49,7 +52,7 @@ Figures are drawn from `results/` by `scripts/make_figures.py`.
   findings 5 and 6, and the changes made during the model run (section 3.7), have not been
   re-audited.
 
-![MMLU-Pro key-error rate: human labels vs the model panel alone](docs/figures/error_rate_gap.png)
+![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
 
 ## 1. What was run
 
@@ -92,7 +95,10 @@ details). One GPQA unit also failed with HTTP 400 (`prithivMLmods/WebMind-7B-v0.
   95% of MMLU-Pro items were dropped, among them `MaziyarPanahi/calme-2.4-rys-78b`, a
   near-copy of `dfurman/CalmeRys-78B-Orpo-v0.1` (agreement 0.992).
 - **Families.** Clustering on response agreement gives 34 families. The largest has 44 of
-  the 96 models and contains all 10 strongest.
+  the 96 models and contains all 10 strongest. It is a cluster by answer agreement, not one
+  lineage: besides Qwen2 / Qwen2.5 models and fine-tunes it includes, for example,
+  `mistralai/Mistral-Large-Instruct-2411`, `mistralai/Mistral-Small-24B-Base-2501`,
+  `tiiuae/Falcon3-10B-Instruct` and `SicariusSicariiStuff/Phi-Line_14B`.
 
 ## 2. Label-only results (MMLU-Pro, MMLU-derived items)
 
@@ -217,23 +223,30 @@ how weakly the scores track the labels (section 3.3), these say little.
 In-region intervals are item-bootstrap percentiles (panel fixed, B = 200); they cover only
 the item-sampling spread, not the bias described next.
 
-**These rates are not key-error rates.** The MMLU-Pro model rate is 16 to 18 times the
-human-label rate, and the GPQA rate is above half. The evidence that this comes from the
-panel and not from the benchmarks:
+**These rates are model-only flag rates, not key-error rates.** On the 6,806 MMLU-derived
+items, where the human-label rate is 1.42%, the flag rate is 22.95% (fixed-fit item
+bootstrap [22.08%, 23.86%]; region-bounded [16.61%, 35.64%]) over all of them and 21.11%
+[20.10%, 22.12%] on the 83% inside the competence region: 16.1 and 14.9 times the
+human-label rate (5.9 times even the broad rate). The fixed-fit intervals resample items
+without refitting and are narrower than the refitted ones in the table
+(`estimates.json`, `mmlu_derived_model_only`). The GPQA rate is above half. The evidence
+that this comes from the panel and not from the benchmarks:
 
-- **One family dominates the top.** The 10 strongest models (by fitted ability; MMLU-Pro
-  accuracy 0.60 on average, best 0.70) all belong to one response-agreement family of 44 of
-  the 96 models. They are Qwen2 / Qwen2.5 base models and fine-tunes, and agree with each
-  other on 68% of MMLU-Pro items. The composite-likelihood correction treats the panel as
+- **One cluster dominates the top.** The 10 strongest models (by fitted ability; MMLU-Pro
+  accuracy 0.60 on average, best 0.70) are all Qwen2 / Qwen2.5 base models or fine-tunes
+  and agree with each other on 68% of MMLU-Pro items. They fall in one response-agreement
+  cluster of 44 of the 96 models, which also contains Mistral, Falcon and Phi models (it is
+  defined by answers, not lineage). The composite-likelihood correction treats the panel as
   57 independent models (J_eff), far more than this structure supports.
 - **They share wrong answers.** On the 2,994 MMLU-Pro items with posterior above 0.5, the
   10 strongest models choose the key 10.1% of the time and the model's proposed option
   61.1% of the time; the 30 weakest choose them 10.7% and 17.7% of the time. A shared
   misconception among strong models is exactly what A1-A2 rule out and what the model
   reads as a wrong key.
-- **The labels disagree.** Of the 699 labeled items flagged at q <= 0.10, 34 are Redux wrong
-  keys: precision 4.9% [3.4%, 6.7%] (narrow), 6.6% [4.9%, 8.7%] (broad). The model's own
-  FDR estimate for this set is 10%.
+- **The labels disagree.** The study flags items at q <= 0.10 with q-values over all 12,027
+  items (the suspect list). 667 of the 2,892 labeled items are flagged, and 33 of them are
+  Redux wrong keys: precision 4.9% [3.4%, 6.9%] (narrow); 45, 6.7% [5.0%, 8.9%] (broad). The
+  model's own FDR estimate for these 667 items is 8.0%.
 - **GPQA is near chance for this panel.** Median accuracy 0.31, best 0.44, with 4 options.
   On the flagged GPQA items the 10 strongest models choose the key 9.6% of the time and the
   proposed option 75.6%. Nothing can be learned about GPQA's keys from this panel.
@@ -265,10 +278,12 @@ for keymix, 500 for baselines; paired AP differences Holm-adjusted over the 5 ba
   [-0.017, +0.059] over top-decile disagreement, +0.022 to +0.023 over item-total,
   scalability and sign test (Holm p 0.47 each), and +0.038 [+0.014, +0.098] over one-coin
   Dawid-Skene (Holm p 0.003). Broad: no difference survives Holm (smallest p 0.15).
-- Precision at k (narrow): 0.08, 0.14, 0.14, 0.095 at k = 25, 50, 100, 200 (top-decile
-  disagreement 0.12, 0.14, 0.12, 0.085). Recall at k = 200: 34% [22%, 48%].
-- At q <= 0.10: recall 61% [47%, 74%] (narrow), precision 4.9%. Recall is 30 of 44 inside
-  the competence region (68% [52%, 81%]) and 3 of 12 outside (25% [5%, 57%]).
+- Precision at k (narrow; expected value over random order within tied scores): 0.08,
+  0.14, 0.14, 0.095 at k = 25, 50, 100, 200; top-decile disagreement 0.147, 0.147, 0.123,
+  0.087 (75 of its items tie at the top score). Recall at k = 200: 34% [22%, 48%].
+- With the study's flags (q <= 0.10 over all items): recall 33 of 56, 59% [45%, 72%]
+  (narrow), precision 4.9%; 30 of 44 inside the competence region (68% [52%, 81%]) and 3 of
+  12 outside (25% [5%, 57%]). Broad: 45 of 97, 46% [36%, 57%].
 - Redux labels the 4-option MMLU item; MMLU-Pro adds 6 distractors. A flagged item whose
   proposed option is an added distractor may be an MMLU-Pro error Redux could not see, so
   precision against Redux can understate true precision. That cannot plausibly explain a
@@ -351,6 +366,12 @@ Ten of the 546 items were dropped because two or more options share a text hash:
   to the planted keys), and they were not recomputed.
 - Residual variance floor in the calibrated estimator (`593ed9f`, section 3.1). Without it
   the narrow interval was [0.92%, 1.93%].
+- After an independent check of the write-up: validation now evaluates the study's own flags
+  (q-values over all items; previously q-values were recomputed on the labeled items only,
+  giving 699 flagged and 34 narrow hits instead of 667 and 33); precision and recall at k
+  are expected values over random order within tied scores; the model-only flag rate is
+  also reported on the MMLU-derived items so that it is compared with the human-label rate
+  on the same items. The validate stage and the report were rerun; nothing else changed.
 
 ## 4. Simulation study (known truth)
 
@@ -484,14 +505,14 @@ interval would not cover; only labels detect that.
   - The `tricks` scenario shows the size of the effect: at a 3% trick rate the model rate is
     about 2 points too high.
   - Outside the competence region only worst-case bounds are possible.
-  - On the real panel this is not hypothetical: the model-only MMLU-Pro rate is 16-18 times
-    the human-label rate (section 3.2). A model-based rate without labels is an estimate
+  - On the real panel this is not hypothetical: on the same MMLU-derived items the
+    model-only flag rate is about 16 times the human-label rate (section 3.2). A model-based rate without labels is an estimate
     under assumptions that cannot be checked from responses, and here they clearly fail.
 - **Shared blind spots.** Leaderboard models share training data, base models and possibly
   contaminated corpora. A misconception common to most strong models is exactly the trick
   case. Families of fine-tunes also shrink the effective panel size. The real panel is far
-  more correlated than the `families` scenario: one family holds 44 of 96 models and all 10
-  strongest, and the composite-likelihood scale (J_eff 57 on MMLU-Pro) does not capture it.
+  more correlated than the `families` scenario: one answer-agreement cluster holds 44 of 96
+  models and all 10 strongest, and the composite-likelihood scale (J_eff 57 on MMLU-Pro) does not capture it.
 - **Sample of models.** The planned panel is the open-weight models that the Open LLM
   Leaderboard evaluated until early 2025. They are much weaker than current frontier models,
   which is why the `weak` scenario exists. A different panel sees different items, so

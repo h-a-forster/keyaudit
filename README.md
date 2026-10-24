@@ -100,18 +100,24 @@ fit.competence  # whether the panel can see a mis-key on this item at all
 From [REPORT.md](REPORT.md) (`results/study-v1/`; 96 models, 12,027 MMLU-Pro items, 2,892 of
 them labeled by MMLU-Redux 2.0; 95% intervals):
 
-| MMLU-Pro, MMLU-derived items | Key-error rate |
+| MMLU-Pro, the 6,806 MMLU-derived items | Rate |
 |---|---|
-| Human-label calibrated, wrong key (narrow) | **1.42% [0.78%, 2.07%]** |
-| Human-label calibrated, any key problem (broad) | **3.91% [2.62%, 5.19%]** |
-| Model panel alone, items it can judge | 22.43% [21.30%, 23.39%] |
-| Model panel alone, all items | 25.37% (region-bounded [16.71%, 39.91%]) |
+| Key-error rate, human-label calibrated: wrong key (narrow) | **1.42% [0.78%, 2.07%]** |
+| Key-error rate, human-label calibrated: any key problem (broad) | **3.91% [2.62%, 5.19%]** |
+| Model-only flag rate, items the panel can judge (83%) | 21.11% [20.10%, 22.12%] |
+| Model-only flag rate, all MMLU-derived items | 22.95% (region-bounded [16.61%, 35.64%]) |
 
-![MMLU-Pro key-error rate: human labels vs the model panel alone](docs/figures/error_rate_gap.png)
+For reference, over all 12,027 MMLU-Pro items the model-only flag rate is 22.43%
+[21.30%, 23.39%] in the competence region and 25.37% overall. Flag-rate intervals on the
+MMLU-derived items resample items with the fit held fixed (REPORT.md 3.2).
 
-- **The model-only rate is not a key-error rate.** All 10 strongest models sit in one family
-  of 44 near-alike models (Qwen2 / Qwen2.5 and fine-tunes). On flagged items they pick the
-  key 10% of the time and one shared other answer 61% of the time. Responses alone cannot
+![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
+
+- **The model-only flag rate is not a key-error rate.** On the same items it is about 16
+  times the human-label rate. The 10 strongest models are all Qwen2 / Qwen2.5 base models
+  or fine-tunes, and they sit in one cluster of 44 models (of mixed lineage) that answer
+  alike. On the 2,994 items with posterior above 0.5 they pick the key 10% of the time and
+  one shared other answer 61% of the time. Responses alone cannot
   tell such a shared blind spot from a wrong key; that is the identifiability limit above,
   observed on real data. For GPQA the panel is near chance (median accuracy 0.31) and the
   model-only rate (54%) means nothing.

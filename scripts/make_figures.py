@@ -5,8 +5,9 @@ Usage: uv run --extra plot python scripts/make_figures.py [--results results/stu
 
 Writes, as SVG and PNG:
 
-* ``error_rate_gap``: MMLU-Pro key-error rate from human labels (label-calibrated, narrow and
-  broad) against the model-only estimate (competence region and all items), 95% intervals.
+* ``error_rate_gap``: on the MMLU-derived MMLU-Pro items, the key-error rate from human labels
+  (label-calibrated, narrow and broad) against the model-only flag rate (competence region,
+  fixed-fit item bootstrap; all items, region-bounded interval), 95% intervals.
 * ``ranking_vs_baselines``: average precision of the suspect-item ranking against the
   MMLU-Redux narrow labels, keyaudit vs the five baselines and a random ranking.
 
@@ -72,31 +73,33 @@ def _save(fig: Any, out: Path, name: str) -> list[Path]:
 def fig_gap(est: dict[str, Any], out: Path) -> list[Path]:
     m = est["mmlu_pro"]
     n, b = m["label_calibrated_narrow"], m["label_calibrated_broad"]
+    d = m["mmlu_derived_model_only"]  # same items as the human-label rows
     rows = [
-        ("Human labels: wrong key", n["estimate"], n["ci"], ORANGE),
-        ("Human labels: any key problem", b["estimate"], b["ci"], ORANGE),
-        ("Model only: items the panel can judge", m["region_rate"], m["region_ci"], BLUE),
-        ("Model only: all items", m["overall"], m["overall_bounded_ci"], BLUE),
-    ]
-    fig, ax = plt.subplots(figsize=(7.2, 3.0))
-    ys = [3.4, 2.6, 1.0, 0.2]
+        ("Key-error rate (human labels):\nwrong key", n["estimate"], n["ci"], ORANGE),
+        ("Key-error rate (human labels):\nany key problem", b["estimate"], b["ci"], ORANGE),
+        ("Model-only flag rate:\nitems the panel can judge", d["region_rate"],
+         d["region_ci_fixed_fit"], BLUE),
+        ("Model-only flag rate:\nall items", d["overall"], d["overall_bounded_ci"], BLUE),
+    ]  # fmt: skip
+    fig, ax = plt.subplots(figsize=(7.2, 3.4))
+    ys = [3.4, 2.5, 1.0, 0.1]
     for y, (_label, pt, ci, col) in zip(ys, rows, strict=True):
         ax.plot([100 * ci[0], 100 * ci[1]], [y, y], color=col, lw=2.2, solid_capstyle="round")
         ax.plot([100 * pt], [y], "o", ms=9, color=col, mec="white", mew=1.5, zorder=3)
         ax.annotate(f"{100 * pt:.1f}%", (100 * ci[1], y), xytext=(6, 0),
                     textcoords="offset points", va="center", fontsize=9.5, color=INK)  # fmt: skip
-    ax.set_yticks(ys, [r[0] for r in rows])
+    ax.set_yticks(ys, [r[0] for r in rows], fontsize=9)
     ax.tick_params(axis="y", length=0)
-    ax.set_ylim(-0.4, 4.0)
+    ax.set_ylim(-0.5, 4.0)
     ax.set_xlim(0, 45)
-    ax.set_xlabel("Share of MMLU-Pro items with a bad answer key (%), 95% interval",
+    ax.set_xlabel(f"Percent of the {d['n_items']:,} MMLU-derived MMLU-Pro items, 95% interval",
                   color=MUTED)  # fmt: skip
-    ax.set_title("MMLU-Pro: human labels vs a model panel alone", loc="left", fontsize=12,
-                 color=INK, pad=10)  # fmt: skip
-    ratio = m["overall"] / n["estimate"]
-    ax.text(44.5, 1.8, f"Model-only estimate is ~{ratio:.0f}x the human-label rate:\n"
-            "strong models share wrong answers", ha="right", va="center", fontsize=8.5,
-            color=MUTED)  # fmt: skip
+    ax.set_title("MMLU-Pro: human labels vs a model panel alone, same items", loc="left",
+                 fontsize=12, color=INK, pad=10)  # fmt: skip
+    ratio = d["overall"] / n["estimate"]
+    ax.text(44.5, 1.75, f"The panel flags ~{ratio:.0f}x more items than humans find\n"
+            "with a wrong key: strong models share wrong answers", ha="right", va="center",
+            fontsize=8.5, color=MUTED)  # fmt: skip
     return _save(fig, out, "error_rate_gap")
 
 

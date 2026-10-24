@@ -184,9 +184,13 @@ Done (study-v1 model stages, 2026-10-24):
 - Headline (label-calibrated, MMLU-derived MMLU-Pro items): narrow 1.42% [0.78%, 2.07%],
   broad 3.91% [2.62%, 5.19%]; variance ratio about 1 (the model scores add nothing over the
   labels). Label-only: narrow 1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%].
-- Model-only rates are inflated by the correlated, weak panel (MMLU-Pro 22.4% in region,
-  25.4% overall; GPQA 54%, panel near chance): all 10 strongest models are in one family of
-  44; on flagged items they choose the key 10% and one shared other option 61% of the time.
+- Model-only flag rates are inflated by the correlated, weak panel: on the MMLU-derived
+  items 22.95% overall and 21.11% in region (about 16x the human rate on the same items);
+  all items 25.4%; GPQA 54% (panel near chance). The 10 strongest models are all Qwen-based
+  and sit in one answer-agreement cluster of 44 (mixed lineage); on the 2,994 items with
+  posterior > 0.5 they choose the key 10% and one shared other option 61% of the time.
+- One flag set: validation uses the study's flags (q-values over the whole matrix):
+  667 labeled flagged, 33 narrow (4.9%), 45 broad (6.7%), narrow recall 33/56.
 - Ranking vs Redux narrow: AP 0.080 [0.052, 0.142], random 0.019, best baseline
   (top-decile disagreement) 0.071; only one-coin Dawid-Skene is beaten after Holm.
 - Changes made during the run (REPORT 3.7): GPQA canonical option mapping by text hash
