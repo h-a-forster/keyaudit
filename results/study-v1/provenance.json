@@ -43,17 +43,40 @@
     "planted_reps": 20
   },
   "units": {
+    "boot": {
+      "ok": 100
+    },
+    "build": {
+      "ok": 6
+    },
     "fetch": {
-      "denied": 194,
-      "ok": 1
+      "ok": 500
+    },
+    "fit": {
+      "ok": 5
     },
     "labels": {
       "ok": 1
+    },
+    "lofo": {
+      "ok": 25
+    },
+    "planted": {
+      "ok": 40
+    },
+    "validate": {
+      "ok": 5
     }
   },
   "unit_cpu_seconds_by_stage": {
-    "fetch": 27.5,
-    "labels": 11.6
+    "boot": 9438.6,
+    "build": 0.0,
+    "fetch": 1663.3,
+    "fit": 29.8,
+    "labels": 11.6,
+    "lofo": 181.9,
+    "planted": 3436.8,
+    "validate": 0.0
   },
   "starts": [
     {
@@ -75,6 +98,86 @@
       "time": "2026-10-24T03:18:56+00:00",
       "package_version": "0.1.0",
       "git_sha": "1cffe08b3cdd4858c8af655d24c04ed4335cbe83"
+    },
+    {
+      "time": "2026-10-24T11:18:44+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "4bddae687dc4505533a23448289e5fcd8283acf3"
+    },
+    {
+      "time": "2026-10-24T11:33:26+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "15d5b7a4373fe7f7c21e15d74e77d06ae20acf4a"
+    },
+    {
+      "time": "2026-10-24T11:59:56+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "816b6b966ec980f4d9dcce433774301c222b92ac"
+    },
+    {
+      "time": "2026-10-24T12:01:55+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "816b6b966ec980f4d9dcce433774301c222b92ac"
+    },
+    {
+      "time": "2026-10-24T12:02:06+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "816b6b966ec980f4d9dcce433774301c222b92ac"
+    },
+    {
+      "time": "2026-10-24T12:02:32+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "816b6b966ec980f4d9dcce433774301c222b92ac"
+    },
+    {
+      "time": "2026-10-24T12:30:35+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "80c4ded2cc87fa7c0cf297b3e848a415d211fa48"
+    },
+    {
+      "time": "2026-10-24T12:35:22+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T12:45:25+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T12:45:45+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T12:46:25+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T12:46:48+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T12:47:11+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T14:43:09+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T15:52:28+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
+    },
+    {
+      "time": "2026-10-24T15:53:27+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "5262f3d4fc7457f16221d464b016a15e094e1a11"
     }
   ],
   "library_versions": {
@@ -86,9 +189,9 @@
     "httpx": "0.28.1"
   },
   "access": {
-    "tried": 200,
-    "ok": 0,
-    "denied": 194,
-    "failed": 6
+    "tried": 101,
+    "ok": 100,
+    "denied": 0,
+    "failed": 1
   }
 }
