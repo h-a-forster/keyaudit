@@ -1,0 +1,79 @@
+{
+  "study": "study-v1",
+  "config_hash": "a2773441a53e14b4acec244cbf5b7bbcb60b47b505a184aca914594a02c4365f",
+  "seed": 20261024,
+  "benchmarks": [
+    "mmlu_pro",
+    "gpqa",
+    "bbh_ld3",
+    "bbh_navigate",
+    "bbh_object_counting"
+  ],
+  "revisions": {
+    "contents": "9c09a7cae43334062a82cb164f2ef255013dafa2",
+    "mmlu_pro": [
+      "241199e1d7a6b280ed13e61c11a40841cbb58c89",
+      "6b65d8a9de5c91740fa8ae414cef23a65c5e2a4b",
+      "53173e8ee5842ab37c1312ef4001c2c08036e7a7",
+      "24f3f5b73dd2d18bf5d9a86a803ba1f1c8122c3c",
+      "897971b44ff637c980d26db3b3c20274b18a951e",
+      "55abfa5a89bcc5cbe8774e720951a10ffc580d16",
+      "7f22cb4db9b2f935c57cf6cb7325e5d869dee33d",
+      "66b10a78ad74f79e440b7643eb4e4dcef1a187d9",
+      "80ab960845e10b67c9ad88895eaee32d58a8be1b",
+      "15c134e9464d887805dd1e385a35adba471b2322",
+      "99176245f8803e1f573e95003bc380af8087d95a",
+      "7db2dc66c66870201e1cf041a3a9297a7674c50a",
+      "73713573382960a0c4288f612ce409427e5e76ff",
+      "014c8cf520218fc7f1ecec95c691a83ae5b8ba14",
+      "295c2820d6984131d76e6a1b0e6e8ce3a11c98fa",
+      "475d58ba0cc18a15fd5d4221f41919199e692331",
+      "9126953e3e196ff1073499437322f9e2c51ed79a",
+      "30527804ea8854662078e457808040d872ecdf29",
+      "24ac2da5bb7c7b42ea1a984c6b535e35a73d30b3"
+    ],
+    "redux": "372ea425445d51e1ba1188c56e5e893f8138621f",
+    "platinum": "51920a33bfb4620c789729ace14141e87a14969b"
+  },
+  "sizes": {
+    "n_models_target": 100,
+    "min_models": 60,
+    "n_boot": 200,
+    "lofo_families": 5,
+    "planted_reps": 20
+  },
+  "units": {
+    "fetch": {
+      "denied": 194,
+      "ok": 1
+    },
+    "labels": {
+      "ok": 1
+    }
+  },
+  "unit_cpu_seconds_by_stage": {
+    "fetch": 27.5,
+    "labels": 38.8
+  },
+  "starts": [
+    {
+      "time": "2026-10-23T23:41:20+00:00",
+      "package_version": "0.1.0.dev0",
+      "git_sha": "22d3a69a30933b3996ea3bdc46132464a824126b"
+    }
+  ],
+  "library_versions": {
+    "keyaudit": "0.1.0.dev0",
+    "numpy": "2.4.6",
+    "scipy": "1.18.1",
+    "pyarrow": "26.0.0",
+    "huggingface-hub": "2.2.0",
+    "httpx": "0.28.1"
+  },
+  "access": {
+    "tried": 200,
+    "ok": 0,
+    "denied": 194,
+    "failed": 6
+  }
+}
