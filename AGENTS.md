@@ -35,8 +35,8 @@ maintainer corrections), and rank suspect items.
   stored. Accepting gated-repository conditions is the account owner's action, not an
   agent's.
 - Scratch files go in `tmp/` (gitignored). Do not create `.bak` copies; use git.
-- Commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Do not push
-  and do not create remote repositories; publishing is done separately after review.
+- Commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. The repository
+  is public: change it through pull requests with CI, not direct pushes to main.
 - Public-release hygiene: no personal names, local user paths or machine details in
   committed files or logs (scrub before committing).
 - Statistical honesty: report sizes, seeds, versions and intervals; name the estimand
@@ -210,5 +210,4 @@ Remaining:
    duplicate-option items come from GPQA or the harness.
 5. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
    is the only way the model-only rate could become informative; owner decision.
-6. Run `pytest --runslow` on the current code. Tag v0.1.0 and publish only with the owner's
-   go-ahead.
+6. Run `pytest --runslow` on the current code. Tag v0.1.0 (published 2026-10-24).
