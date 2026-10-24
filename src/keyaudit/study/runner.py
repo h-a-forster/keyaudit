@@ -794,10 +794,69 @@ def _mmlu_pro_validation(
         out[tier] = res
     corr = set(np.asarray(la["corrected_qid"]).tolist())
     in_m = np.asarray([int(qq) in corr for qq in m.item_id])
-    out["maintainer_corrections"] = {
-        "in_matrix": int(in_m.sum()),
-        "flagged": int((in_m & flagged).sum()),
+    mc: dict[str, Any] = {"in_matrix": int(in_m.sum()), "flagged": int((in_m & flagged).sum())}
+    if 0 < in_m.sum() < in_m.size:
+        # recall-oriented only: corrected items are not a random sample of key errors
+        seed = unit_seed(cfg.study.seed, f"{uid}/corrections")
+        mc["ranking"] = validate.ranking_summary(s, in_m, 500, seed, conf=u.conf)
+        mc["baselines"] = {
+            n: validate.ranking_summary(np.asarray(fa[f"baseline_{n}"]), in_m, 200, seed)
+            for n in BASELINES
+        }
+    out["maintainer_corrections"] = mc
+    return out
+
+
+PLATINUM_SUBSET = {
+    "bbh_ld3": "bbh_logical_deduction_three_objects",
+    "bbh_navigate": "bbh_navigate",
+    "bbh_object_counting": "bbh_object_counting",
+}
+
+
+def _platinum_validation(
+    cfg: StudyConfig, uid: str, m: Any, fa: dict[str, Any], benchmark: str
+) -> dict[str, Any] | None:
+    """Platinum check for a BBH matrix (DESIGN 7.3): flags among Platinum-clean items (false
+    positives) and among rejected items. Aggregate counts only (per-item labels stay local)."""
+    from keyaudit import validate
+    from keyaudit.baselines import BASELINES
+    from keyaudit.sources import labels, leaderboard
+
+    subset = PLATINUM_SUBSET.get(benchmark)
+    if subset is None:
+        return None
+    plat = labels.load_platinum(cfg.data.platinum_revision, cfg.data.cache_dir)[subset]
+    status = {leaderboard.stable_id(str(x)): str(c)
+              for x, c in zip(plat["input"], plat["cleaning_status"], strict=True)}  # fmt: skip
+    u = cfg.uncertainty
+    s = np.asarray(fa["p_miskey"])
+    flagged = stats.bayes_fdr_qvalues(1.0 - s) <= u.fdr_alpha
+    st = np.asarray([status.get(int(q), "") for q in m.item_id])
+    clean = (st == "verified") | (st == "consensus")
+    rej = st == "rejected"
+    out: dict[str, Any] = {
+        "n_joined": int((st != "").sum()),
+        "n_clean": int(clean.sum()),
+        "flagged_clean": int((flagged & clean).sum()),
+        "fp_rate_ci": (
+            stats.clopper_pearson(int((flagged & clean).sum()), int(clean.sum()), u.conf)
+            if clean.any()
+            else None
+        ),
+        "n_rejected": int(rej.sum()),
+        "flagged_rejected": int((flagged & rej).sum()),
     }
+    sel = clean | rej
+    if rej.any() and clean.any():
+        seed = unit_seed(cfg.study.seed, f"{uid}/platinum")
+        y = rej[sel]
+        ks = tuple(k for k in (10, 25, 50) if k <= int(sel.sum()))
+        out["ranking"] = validate.ranking_summary(s[sel], y, 500, seed, ks=ks, conf=u.conf)
+        out["baselines"] = {
+            n: validate.ranking_summary(np.asarray(fa[f"baseline_{n}"])[sel], y, 200, seed, ks=ks)
+            for n in BASELINES
+        }
     return out
 
 
@@ -814,6 +873,10 @@ def stage_validate(cfg: StudyConfig, store: UnitStore) -> None:
         if b == "mmlu_pro" and uid_lab is not None:
             la, _ = store.load(uid_lab)
             meta.update(_mmlu_pro_validation(cfg, store, uid, m, fa, la))
+        elif b in PLATINUM_SUBSET:
+            plat = _platinum_validation(cfg, uid, m, fa, b)
+            if plat is not None:
+                meta["platinum"] = plat
         store.save(uid, {}, meta)
 
 

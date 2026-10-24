@@ -253,3 +253,24 @@ def test_build_gpqa_maps_by_option_hash_and_refuses_old_units(tmp_path: Path) ->
     store.save("fetch/gpqa/m3", {k: v for k, v in a.items() if k != "opt_hash"}, m)
     with pytest.raises(runner.PreconditionFailed, match="option hashes"):
         runner._build_other(store, "gpqa", {"m0", "m3"}, {})
+
+
+def test_platinum_validation_counts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from keyaudit.baselines import BASELINES
+    from keyaudit.sources import labels
+
+    cfg = load_config(_config(tmp_path))
+    inputs = [f"synthetic input {i}" for i in range(30)]
+    status = ["verified"] * 25 + ["rejected"] * 5
+    plat = {"bbh_navigate": {"input": inputs, "cleaning_status": status}}
+    monkeypatch.setattr(labels, "load_platinum", lambda *a, **k: plat)
+    ids = np.asarray([leaderboard.stable_id(x) for x in inputs] + [7], dtype=np.int64)
+    s = np.r_[np.full(25, 0.01), np.full(5, 0.99), 0.5]
+    s[0] = 0.99  # one flagged clean item
+    m = type("M", (), {"item_id": ids})()
+    fa = {"p_miskey": s, **{f"baseline_{n}": s[::-1].copy() for n in BASELINES}}
+    out = runner._platinum_validation(cfg, "validate/bbh_navigate", m, fa, "bbh_navigate")
+    assert out["n_joined"] == 30 and out["n_clean"] == 25 and out["n_rejected"] == 5
+    assert out["flagged_rejected"] == 5 and out["flagged_clean"] == 1
+    assert out["ranking"]["n_positive"] == 5 and set(out["baselines"]) == set(BASELINES)
+    assert runner._platinum_validation(cfg, "x", m, fa, "gpqa") is None
