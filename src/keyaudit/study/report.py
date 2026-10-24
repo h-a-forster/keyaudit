@@ -312,7 +312,7 @@ def _model_results(
             f"(J_eff {fmeta['j_eff']:.1f}). Competence region {100 * bnd.share_in_region:.0f}% "
             f"of items, E_model under A1-A2 there {100 * bnd.rate_in_region:.2f}% "
             f"{_fmt_ci(est['region_ci'])} (item bootstrap, panel fixed, B = {est['n_boot']}). "
-            f"All items: {100 * est['overall']:.2f}% (biased low outside the region; "
+            f"All items: {100 * est['overall']:.2f}% (no valid model inference outside the region; "
             f"region-bounded interval {_fmt_ci(est['overall_bounded_ci'])}, worst-case "
             f"bounds {_fmt_ci(est['bounds'])}). "
             f"{int(flagged.sum())} items at q <= {cfg.uncertainty.fdr_alpha}.",

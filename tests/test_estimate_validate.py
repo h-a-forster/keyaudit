@@ -306,3 +306,15 @@ def test_lofo_and_stability() -> None:
     assert np.nanmin(stab) >= 0 and np.nanmax(stab) <= 1
     assert np.nanmean(stab) > 0.3  # 4 families of ~10 in a 40-model panel: flags move
     assert np.all(np.isnan(validate.flag_stability(base, [])))
+
+
+def test_residual_variance_floor_uses_coarse_stratum() -> None:
+    e = np.array([0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.5, 0.5])
+    lab = np.array([True, True, True, True, True, True, True, False])
+    strata = np.array(["a", "a", "b", "b", "c", "c", "m", "m"])
+    coarse = np.array(["X", "X", "X", "X", "Y", "Y", "X", "Y"])
+    fl = estimate.residual_variance_floor(e, lab, strata, coarse)
+    x = e[lab & (coarse == "X")]
+    assert fl["a"] == pytest.approx(x.var(ddof=1)) and fl["b"] == fl["a"]
+    assert fl["c"] == 0.0  # category Y residuals are all zero
+    assert fl["m"] == pytest.approx(e[lab].var(ddof=1))  # spans X and Y: all labeled

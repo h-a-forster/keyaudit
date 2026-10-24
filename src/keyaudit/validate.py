@@ -21,7 +21,14 @@ from keyaudit.matrix import ResponseMatrix
 
 
 def average_precision(scores: ArrayLike, labels: ArrayLike) -> float:
-    """Average precision (area under the step precision-recall curve), ties broken stably."""
+    """Average precision: sum over distinct score thresholds of recall gain x precision.
+
+    Tied scores form one threshold (as in scikit-learn), so the value does not depend on the
+    order of tied items. Breaking ties by position instead made the stratified bootstrap
+    (which lists resampled positives first) inflate AP for tie-heavy scores such as top-decile
+    disagreement and one-coin Dawid-Skene. Without ties this equals the mean precision at the
+    positives' ranks.
+    """
     s = np.asarray(scores, dtype=float)
     y = np.asarray(labels, dtype=bool)
     if s.shape != y.shape or s.ndim != 1:
@@ -29,9 +36,13 @@ def average_precision(scores: ArrayLike, labels: ArrayLike) -> float:
     if not y.any():
         raise ValueError("average precision is undefined without positives")
     order = np.argsort(-s, kind="stable")
-    hits = y[order]
-    precision_at_hit = np.cumsum(hits)[hits] / (np.flatnonzero(hits) + 1)
-    return float(precision_at_hit.mean())
+    ss, hits = s[order], y[order]
+    tp = np.cumsum(hits)
+    last = np.r_[np.flatnonzero(ss[1:] != ss[:-1]), ss.size - 1]  # end of each tie group
+    tp_t = tp[last]
+    precision = tp_t / (last + 1)
+    gain = np.diff(np.r_[0, tp_t]) / tp[-1]
+    return float(np.sum(gain * precision))
 
 
 def precision_recall_at_k(scores: ArrayLike, labels: ArrayLike, k: int) -> tuple[float, float]:

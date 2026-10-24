@@ -100,3 +100,13 @@ def test_average_precision_and_at_k() -> None:
 def test_effective_panel_size() -> None:
     assert effective_panel_size(np.eye(5)) == pytest.approx(5.0)
     assert effective_panel_size(np.ones((5, 5))) == pytest.approx(1.0)
+
+
+def test_average_precision_ties_are_order_free() -> None:
+    # one tie group holding 1 positive and 3 negatives, then a lone positive
+    s = np.array([0.5, 0.5, 0.5, 0.5, 0.1])
+    y1 = np.array([True, False, False, False, True])
+    y2 = np.array([False, False, False, True, True])
+    # threshold 0.5: precision 1/4, recall gain 1/2; threshold 0.1: precision 2/5, gain 1/2
+    assert average_precision(s, y1) == pytest.approx(0.5 * 0.25 + 0.5 * 0.4)
+    assert average_precision(s, y1) == average_precision(s, y2)

@@ -256,6 +256,22 @@ def stratified_bootstrap_ci(
     return percentile_interval(vals, conf)
 
 
+def residual_variance_floor(
+    e: NDArray[np.float64],
+    labeled: NDArray[np.bool_],
+    strata: NDArray[np.str_],
+    coarse: NDArray[np.str_],
+) -> dict[str, float]:
+    """Per-stratum floor: the labeled variance (ddof 1) of ``e`` in the stratum's coarse
+    stratum, or over all labeled items when the stratum spans several coarse strata."""
+    out: dict[str, float] = {}
+    for st in np.unique(strata):
+        cs = np.unique(coarse[strata == st])
+        sel = labeled & np.isin(coarse, cs) if cs.size == 1 else labeled
+        out[str(st)] = float(e[sel].var(ddof=1)) if sel.sum() > 1 else 0.0
+    return out
+
+
 def label_calibrated_estimate(
     s: ArrayLike,
     labels: ArrayLike,
@@ -266,14 +282,21 @@ def label_calibrated_estimate(
     conf: float = 0.95,
     n_boot: int = 2000,
 ) -> CalibratedEstimate:
-    """Headline estimator of DESIGN 6.7.1 on a population with a random labeled sample."""
+    """Headline estimator of DESIGN 6.7.1 on a population with a random labeled sample.
+
+    Each stratum's residual variance is floored at the pooled labeled residual variance of
+    its coarse stratum (all labeled items for a stratum spanning several): the residual
+    analogue of the label-only floor (audit finding 1), since with rare positives most fine
+    strata have no positive and an almost-zero residual variance.
+    """
     s = np.asarray(s, dtype=float)
     lab = np.asarray(labels, dtype=float)
     is_lab = ~np.isnan(lab)
     f = cross_fitted_calibration(s, lab, folds, seed)
     strata = collapse_strata(fine_strata, coarse_strata, is_lab)
     y = np.where(is_lab, lab, 0.0)
-    est = stats.stratified_difference_estimate(f, is_lab, y, strata, conf=conf)
+    floor = residual_variance_floor(y - f, is_lab, strata, np.asarray(coarse_strata))
+    est = stats.stratified_difference_estimate(f, is_lab, y, strata, conf=conf, var_floor=floor)
     ci = stratified_bootstrap_ci(f, is_lab, y, strata, n_boot, seed, conf)
     return CalibratedEstimate(est, ci, len(np.unique(strata)))
 
