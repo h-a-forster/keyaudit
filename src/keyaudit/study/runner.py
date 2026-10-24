@@ -12,7 +12,7 @@ Stages, in order:
   Platinum counts).
 * ``build``: response matrices (one unit per benchmark); needs at least
   ``panel.min_models`` readable models, otherwise :class:`PreconditionFailed` (exit code 3).
-* ``fit`` (one unit per benchmark), ``boot`` (chunks of ``boot_chunk`` pigeonhole
+* ``fit`` (one unit per benchmark), ``boot`` (chunks of ``boot_chunk`` item-bootstrap
   replicates), ``lofo`` (one unit per left-out family), ``planted`` (one unit per replicate
   and mode; MMLU-Pro only), ``validate`` (one unit per benchmark).
 

@@ -18,6 +18,8 @@ def test_bootstrap_indices_deterministic() -> None:
     assert all(np.array_equal(x, y) for x, y in zip(a, b, strict=True))
     assert not np.array_equal(a[0], c[0])
     assert a[0].max() < 50 and a[1].max() < 10
+    d = estimate.bootstrap_indices(50, 10, seed=1, rep=3, resample_models=False)
+    assert np.array_equal(d[0], a[0]) and np.array_equal(d[1], np.arange(10))
 
 
 def test_bootstrap_replicate_deterministic() -> None:
@@ -29,6 +31,26 @@ def test_bootstrap_replicate_deterministic() -> None:
     assert set(r1) == {"overall", "region", "group:g0", "group:g1"}
     res = estimate.pigeonhole_bootstrap(None, sp.matrix, 3, 5, kw)
     assert res["overall"].shape == (3,) and res["overall"][0] == r1["overall"]
+
+
+def test_item_bootstrap_not_inflated_but_pigeonhole_is() -> None:
+    """Regression for DESIGN 14 deviation 20: duplicated models inflate pigeonhole replicates.
+
+    Reference values (seed 5, 1000 x 60, eps 0.03): full-sample rate 0.0217; item replicates
+    0.0173 / 0.0279 / 0.0254; pigeonhole replicates 0.0565 / 0.0614 / 0.0495.
+    """
+    sp = simulate_panel(n_items=1000, n_models=60, k=10, eps=0.03, seed=5)
+    fit = estimate.fit_keymix(sp.matrix)
+    kw = {"tau": fit.tau}
+    full = float(fit.p_miskey.mean())
+    items = [estimate.bootstrap_replicate(sp.matrix, r, 1, kw)["overall"] for r in range(3)]
+    both = [
+        estimate.bootstrap_replicate(sp.matrix, r, 1, kw, resample_models=True)["overall"]
+        for r in range(3)
+    ]
+    assert full == pytest.approx(0.0217, abs=5e-4)
+    assert abs(np.mean(items) - full) < 0.006
+    assert np.mean(both) > 2 * full
 
 
 def test_percentile_interval() -> None:

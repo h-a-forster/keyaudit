@@ -10,7 +10,7 @@ Checks the method where the truth is known, as checkpointed units under ``<out>/
   true and estimated rates (overall and inside the competence region), AP against the planted
   mis-keys, precision and recall at q <= 0.10, and the label-calibrated difference estimator
   on a random 25% "human-labeled" sample.
-* ``cov/<rep>``: pigeonhole bootstrap coverage on smaller panels (B replicates per unit).
+* ``cov/<rep>``: item bootstrap coverage (panel fixed) on smaller panels (B replicates per unit).
 
 ``summarise`` aggregates the units into ``summary.json`` and ``tables.md``.
 """
@@ -140,6 +140,7 @@ def coverage_unit(rep: int, seed: int, n_items: int, n_models: int, n_boot: int)
             "covered_overall": bool(ov[0] <= true_o <= ov[1]),
             "covered_region": bool(rg[0] <= true_r <= rg[1]),
             "n_boot": n_boot,
+            "bootstrap": "items",
         },
     }
 
@@ -228,6 +229,17 @@ def summarise(store: UnitStore, results: Path, profile: str, seed: int) -> str:
                 "cp99_9_lower": stats.clopper_pearson(k, len(cov), 0.998)[0],
             }  # fmt: skip
         summary["coverage"]["n_boot"] = cov[0]["n_boot"]
+        # Units written before deviation 20 (0.1.0.dev0) resampled models too and carry no tag.
+        modes = sorted({r.get("bootstrap", "pigeonhole") for r in cov})
+        if len(modes) > 1:
+            raise RuntimeError(f"coverage units mix bootstrap modes: {modes}")
+        summary["coverage"]["bootstrap"] = modes[0]
+        summary["coverage"]["median_width_overall"] = float(
+            np.median([r["ci_overall"][1] - r["ci_overall"][0] for r in cov])
+        )
+        summary["coverage"]["point_in_interval_overall"] = sum(
+            r["ci_overall"][0] <= r["est_rate"] <= r["ci_overall"][1] for r in cov
+        )
         summary["coverage"]["bias_overall"] = _mean_ci(
             [r["est_rate"] - r["true_rate"] for r in cov]
         )
@@ -241,6 +253,12 @@ def summarise(store: UnitStore, results: Path, profile: str, seed: int) -> str:
 def _p(x: dict[str, float], pct: bool = True, nd: int = 2) -> str:
     f = 100.0 if pct else 1.0
     return f"{f * x['mean']:.{nd}f} [{f * x['lo']:.{nd}f}, {f * x['hi']:.{nd}f}]"
+
+
+_BOOT_LABEL = {
+    "items": "Item bootstrap (panel fixed)",
+    "pigeonhole": "Pigeonhole bootstrap (items and models resampled)",
+}
 
 
 def _tables(s: dict[str, Any]) -> str:
@@ -288,11 +306,15 @@ def _tables(s: dict[str, Any]) -> str:
     if cv:
         lines += [
             "",
-            f"Pigeonhole bootstrap coverage of nominal 95% intervals (B = {cv['n_boot']}): "
+            f"{_BOOT_LABEL[cv.get('bootstrap', 'pigeonhole')]} coverage of nominal 95% intervals "
+            f"(B = {cv['n_boot']}): "
             f"overall rate {cv['overall']['covered']}/{cv['overall']['n']} "
             f"(CP 95% {cv['overall']['cp95'][0]:.2f}-{cv['overall']['cp95'][1]:.2f}); rate "
             f"inside the competence region {cv['region']['covered']}/{cv['region']['n']} "
             f"(CP 95% {cv['region']['cp95'][0]:.2f}-{cv['region']['cp95'][1]:.2f}, lower "
-            f"99.9% bound {cv['region']['cp99_9_lower']:.2f}).",
+            f"99.9% bound {cv['region']['cp99_9_lower']:.2f}). Median width of the overall "
+            f"interval {100 * cv['median_width_overall']:.2f} points; the point estimate lies "
+            f"inside its own interval in {cv['point_in_interval_overall']}/{cv['overall']['n']} "
+            "panels.",
         ]
     return "\n".join(lines) + "\n"

@@ -1,9 +1,11 @@
 """Error-rate estimators with intervals (docs/DESIGN.md section 6.7, milestone M4).
 
-1. Model-based: ``eps_g = mean_{i in g} s_i`` with pigeonhole bootstrap intervals (items and
-   models resampled independently, model refitted; Owen 2007). Replicates keep the
-   full-sample ``tau`` (resampled duplicate models would otherwise look like a correlated
-   panel).
+1. Model-based: ``eps_g = mean_{i in g} s_i`` with bootstrap intervals over items, conditional
+   on the panel (model refitted, full-sample ``tau`` kept). The pigeonhole bootstrap (items
+   and models resampled; Owen 2007) is available with ``resample_models=True`` but is not
+   the default: duplicated models in a replicate count as independent confirmations of the
+   same answer and inflate the rate (about 2-3x on a 1000 x 60 panel; docs/DESIGN.md
+   section 14, deviation 20).
 2. Label-calibrated (headline where labels exist): the stratified difference estimator of
    :func:`keyaudit.stats.stratified_difference_estimate` with cross-fitted Platt-calibrated
    scores ``f_i`` on the population and labels on the random labeled sample; a stratified
@@ -31,11 +33,16 @@ from keyaudit.matrix import ResponseMatrix
 
 
 def bootstrap_indices(
-    n_items: int, n_models: int, seed: int, rep: int
+    n_items: int, n_models: int, seed: int, rep: int, resample_models: bool = True
 ) -> tuple[NDArray[np.int64], NDArray[np.int64]]:
-    """Item and model indices of pigeonhole replicate ``rep`` (deterministic in seed, rep)."""
+    """Item and model indices of replicate ``rep`` (deterministic in seed, rep).
+
+    With ``resample_models=False`` the models are kept as they are (item draws unchanged).
+    """
     rng = np.random.default_rng([seed, rep])
-    return rng.integers(0, n_items, n_items), rng.integers(0, n_models, n_models)
+    ii = rng.integers(0, n_items, n_items)
+    jj = rng.integers(0, n_models, n_models)
+    return ii, (jj if resample_models else np.arange(n_models, dtype=np.int64))
 
 
 def bootstrap_replicate(
@@ -44,13 +51,14 @@ def bootstrap_replicate(
     seed: int,
     fit_kwargs: dict[str, Any],
     kappa0: float = 0.5,
+    resample_models: bool = False,
 ) -> dict[str, float]:
-    """One pigeonhole replicate: refit on resampled items and models; group rates.
+    """One bootstrap replicate: refit on resampled items (and models, if asked); group rates.
 
     Returns ``{"overall": .., "region": .., "group:<g>": ..}`` (mean posterior over the
     resampled items).
     """
-    ii, jj = bootstrap_indices(m.shape[0], m.shape[1], seed, rep)
+    ii, jj = bootstrap_indices(m.shape[0], m.shape[1], seed, rep, resample_models)
     sub = m.subset(items=ii, models=jj)
     fit = fit_keymix(sub, **fit_kwargs)
     out = {"overall": float(fit.p_miskey.mean())}
@@ -68,13 +76,19 @@ def pigeonhole_bootstrap(
     n_boot: int,
     seed: int,
     fit_kwargs: dict[str, Any] | None = None,
+    resample_models: bool = False,
 ) -> dict[str, NDArray[np.float64]]:
-    """Serial pigeonhole bootstrap (the study runs replicates as checkpointed units).
+    """Serial bootstrap (the study runs replicates as checkpointed units).
 
-    ``fit_fn`` is accepted for API symmetry and ignored (:func:`fit_keymix` is used).
+    Items only by default; ``resample_models=True`` gives the pigeonhole bootstrap (see the
+    module docstring for why it is not the default). ``fit_fn`` is accepted for API symmetry and
+    ignored (:func:`fit_keymix` is used).
     """
     del fit_fn
-    reps = [bootstrap_replicate(matrix, r, seed, fit_kwargs or {}) for r in range(n_boot)]
+    reps = [
+        bootstrap_replicate(matrix, r, seed, fit_kwargs or {}, 0.5, resample_models)
+        for r in range(n_boot)
+    ]
     keys = reps[0].keys() if reps else []
     return {k: np.asarray([r[k] for r in reps]) for k in keys}
 

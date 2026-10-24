@@ -609,5 +609,40 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
 13. Pigeonhole replicates keep the full-sample tau: resampled duplicate models would
     otherwise look like a correlated panel and inflate tau.
 14. Platt calibration regresses the label on logit(s_i), with s_i clipped to [1e-6, 1 - 1e-6]
-    and a ridge of 1e-3 on both coefficients. Bootstrap p-values are floored at 1/B.
+    and a ridge of 1e-2 on both coefficients, fitted by Newton steps with backtracking (plain
+    Newton diverged with 4 positives in a simulation). Bootstrap p-values are floored at 1/B.
 
+**M5 (runner, report, first runs)**
+
+15. Stages are `fetch, labels, build, fit, boot, lofo, planted, validate`. The new `labels`
+    stage computes label-only estimates that need no panel: the classical stratified
+    estimator (f = 0) of `E_label` for the MMLU-derived items, per-category Clopper-Pearson
+    intervals, and Fisher exact tests of each category against the rest, Holm-adjusted. These
+    tests treat the labeled items as a simple random sample and ignore the subject strata.
+    Without a panel to fingerprint the runs, the canonical revision falls back to `014c8cf5`,
+    the revision current when the leaderboard stopped evaluating.
+16. `fetch` tries at most `2 * n_models` candidates. A denied model is replaced by the next
+    reserve in its quintile. HTTP 400 (no parquet conversion for that config) and 404
+    (repository missing) count as failed, not denied.
+17. **First real run (2026-10-24, `configs/study.toml`)**: 200 candidates tried, 194 denied
+    (403: conditions not accepted), 6 failed (5 x HTTP 400, 1 x 404), 0 readable. `build`
+    stopped with exit code 3, so no model-based number exists. Wall time: 12.5 minutes,
+    mostly about 3.5 s per denied request, plus 39 s for the labels unit.
+18. The simulation study (`keyaudit simulate`, `results/simulation-v1/`) was added to test
+    the method where the truth is known, because the real panel was unavailable. Its sizes
+    are fixed in `keyaudit.study.simulation.PROFILES`.
+19. GPQA and BBH matrices take items and keys from the details. Items whose embedded key
+    differs between runs are dropped. Models are gated against the task accuracy in their
+    `results_*.json`.
+
+20. **Bootstrap over items, panel fixed (after the M5 runs).** In a pigeonhole replicate a
+    model drawn twice counts as two independent confirmations of the same answer, so the
+    refitted rate is inflated (about 2-3x on a 1000 x 60 panel; regression test
+    `test_item_bootstrap_not_inflated_but_pigeonhole_is`). The default is now items only,
+    conditional on the panel (`resample_models=False`); intervals no longer reflect panel
+    sampling. The coverage units in `results/simulation-v1/` were computed before this change
+    with the pigeonhole bootstrap: their median overall interval is about 22 points wide and
+    does not contain its own point estimate in 19 of 30 panels, so the 29/30 "coverage" there
+    is not evidence of a working interval. Coverage of the item bootstrap has not been
+    measured yet. Coverage units now record their mode (`bootstrap`), and the summary refuses
+    to mix modes.

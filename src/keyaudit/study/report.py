@@ -49,6 +49,10 @@ def _fmt_ci(ci: Any, pct: bool = True) -> str:
     return f"[{100 * lo:.2f}%, {100 * hi:.2f}%]" if pct else f"[{lo:.3f}, {hi:.3f}]"
 
 
+def _fmt_p(p: float) -> str:
+    return "<0.001" if p < 0.001 else f"{p:.3f}"
+
+
 def _provenance(cfg: StudyConfig, store: UnitStore) -> dict[str, Any]:
     from keyaudit.hub import library_versions
 
@@ -130,7 +134,7 @@ def _labels_section(lab: dict[str, Any]) -> list[str]:
     for c, v in sorted(e.items()):
         lines.append(
             f"| {c} | {v['n_labeled']} | {v['positives']} | {100 * v['rate']:.1f}% | "
-            f"{_fmt_ci(v['ci'])} | {v['p_holm']:.3f} |"
+            f"{_fmt_ci(v['ci'])} | {_fmt_p(v['p_holm'])} |"
         )
     mc = lab["maintainer_corrections"]
     lines += [
@@ -267,7 +271,7 @@ def _model_results(
             "",
             f"{m.shape[0]} items x {m.shape[1]} models; tau {fmeta['tau']:.2f} "
             f"(J_eff {fmeta['j_eff']:.1f}). E_model under A1-A2: {100 * est['overall']:.2f}% "
-            f"{_fmt_ci(est['overall_ci'])} (pigeonhole bootstrap, B = {est['n_boot']}); "
+            f"{_fmt_ci(est['overall_ci'])} (item bootstrap, panel fixed, B = {est['n_boot']}); "
             f"competence region {100 * bnd.share_in_region:.0f}% of items, rate there "
             f"{100 * bnd.rate_in_region:.2f}%; worst-case bounds {_fmt_ci(est['bounds'])}. "
             f"{int(flagged.sum())} items at q <= {cfg.uncertainty.fdr_alpha}.",
