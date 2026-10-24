@@ -208,3 +208,18 @@ def test_label_estimates_small() -> None:
     assert out["narrow"]["estimate"] == pytest.approx(ref)
     assert out["narrow"]["per_category"]["math"]["positives"] == 2
     assert 0 <= out["narrow"]["per_category"]["law"]["p_holm"] <= 1
+    assert out["narrow"]["per_category"]["math"]["weighted_rate"] == pytest.approx(2 / 12)
+    subs = out["narrow"]["per_subject"]
+    assert set(subs) == {"algebra", "law"}
+    assert subs["algebra"]["positives"] == 2 and subs["algebra"]["N"] == 20
+    assert subs["law"]["category"] == "law" and 0 <= subs["law"]["p_holm"] <= 1
+
+
+def test_weighted_rate_reflects_subject_mix() -> None:
+    # finding 2: one category, a small subject with all the errors and a large clean one
+    y = np.r_[np.ones(5), np.zeros(5), np.zeros(90)]
+    labeled = np.r_[np.ones(10, dtype=bool), np.ones(10, dtype=bool), np.zeros(80, dtype=bool)]
+    subject = np.asarray(["college"] * 10 + ["high_school"] * 90)
+    sel = np.ones(100, dtype=bool)
+    # raw labeled rate 5/20 = 25%; weighted (10 * 0.5 + 90 * 0) / 100 = 5%
+    assert runner._weighted_rate(y, labeled, subject, sel) == pytest.approx(0.05)

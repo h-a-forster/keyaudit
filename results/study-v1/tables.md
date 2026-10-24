@@ -26,24 +26,33 @@ Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2883; 56 
 | E_label narrow | 56 | 1.48% | [0.83%, 2.13%] | 1.94% [1.47%, 2.52%] |
 | E_label broad | 97 | 3.97% | [2.68%, 5.25%] | 3.36% [2.74%, 4.09%] |
 
-Per category (narrow, canonical revision; Fisher exact test against all other categories, Holm-adjusted over categories):
+Per category (narrow, canonical revision; Fisher exact test against all other categories, Holm-adjusted over categories; the weighted rate weights each subject by its population size):
 
-| Category | Labeled | Positives | Rate | CP 95% | p (Holm) |
-|---|---|---|---|---|---|
-| biology | 99 | 1 | 1.0% | [0.03%, 5.50%] | 1.000 |
-| business | 104 | 0 | 0.0% | [0.00%, 3.48%] | 1.000 |
-| chemistry | 115 | 17 | 14.8% | [8.85%, 22.61%] | <0.001 |
-| computer science | 262 | 4 | 1.5% | [0.42%, 3.86%] | 1.000 |
-| economics | 190 | 1 | 0.5% | [0.01%, 2.90%] | 1.000 |
-| engineering | 45 | 1 | 2.2% | [0.06%, 11.77%] | 1.000 |
-| health | 385 | 11 | 2.9% | [1.43%, 5.05%] | 1.000 |
-| history | 161 | 2 | 1.2% | [0.15%, 4.42%] | 1.000 |
-| law | 153 | 3 | 2.0% | [0.41%, 5.62%] | 1.000 |
-| math | 389 | 4 | 1.0% | [0.28%, 2.61%] | 1.000 |
-| other | 414 | 4 | 1.0% | [0.26%, 2.46%] | 1.000 |
-| philosophy | 231 | 1 | 0.4% | [0.01%, 2.39%] | 1.000 |
-| physics | 264 | 5 | 1.9% | [0.62%, 4.36%] | 1.000 |
-| psychology | 81 | 2 | 2.5% | [0.30%, 8.64%] | 1.000 |
+| Category | Labeled | Positives | Rate | CP 95% | Weighted rate | p (Holm) |
+|---|---|---|---|---|---|---|
+| biology | 99 | 1 | 1.0% | [0.03%, 5.50%] | 0.7% | 1.000 |
+| business | 104 | 0 | 0.0% | [0.00%, 3.48%] | 0.0% | 1.000 |
+| chemistry | 115 | 17 | 14.8% | [8.85%, 22.61%] | 9.7% | <0.001 |
+| computer science | 262 | 4 | 1.5% | [0.42%, 3.86%] | 1.6% | 1.000 |
+| economics | 190 | 1 | 0.5% | [0.01%, 2.90%] | 0.6% | 1.000 |
+| engineering | 45 | 1 | 2.2% | [0.06%, 11.77%] | 2.2% | 1.000 |
+| health | 385 | 11 | 2.9% | [1.43%, 5.05%] | 2.3% | 1.000 |
+| history | 161 | 2 | 1.2% | [0.15%, 4.42%] | 1.1% | 1.000 |
+| law | 153 | 3 | 2.0% | [0.41%, 5.62%] | 1.7% | 1.000 |
+| math | 389 | 4 | 1.0% | [0.28%, 2.61%] | 0.5% | 1.000 |
+| other | 414 | 4 | 1.0% | [0.26%, 2.46%] | 0.5% | 1.000 |
+| philosophy | 231 | 1 | 0.4% | [0.01%, 2.39%] | 0.3% | 1.000 |
+| physics | 264 | 5 | 1.9% | [0.62%, 4.36%] | 2.3% | 1.000 |
+| psychology | 81 | 2 | 2.5% | [0.30%, 8.64%] | 2.5% | 1.000 |
+
+Per subject (narrow, canonical revision; subjects with Holm p < 0.05 or at least 3 positives; Fisher exact test against all other labeled items, Holm over 56 subjects):
+
+| Subject | Category | Labeled / population | Positives | Rate | CP 95% | p (Holm) |
+|---|---|---|---|---|---|---|
+| abstract_algebra | math | 83 / 83 | 4 | 4.8% | [1.33%, 11.88%] | 1.000 |
+| college_chemistry | chemistry | 62 / 63 | 17 | 27.4% | [16.85%, 40.23%] | <0.001 |
+| conceptual_physics | physics | 63 / 136 | 3 | 4.8% | [0.99%, 13.29%] | 1.000 |
+| virology | health | 26 / 46 | 10 | 38.5% | [20.23%, 59.43%] | <0.001 |
 
 Maintainer key corrections after the canonical revision: 23 (by source {'stemez': 2, 'ori_mmlu': 21}); Redux labels of the corrected items: {'unlabeled': 13, 'ok': 10}; 0 of the 56 Redux `wrong_groundtruth` items were corrected.
 

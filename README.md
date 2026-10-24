@@ -101,8 +101,9 @@ needs no model panel:
 | Narrow: MMLU-Redux `wrong_groundtruth` | 56 | 1.48% | [0.83%, 2.13%] |
 | Broad: also no correct or multiple correct answers | 97 | 3.97% | [2.68%, 5.25%] |
 
-In MMLU-Redux's chemistry items 17 of 115 keys are wrong (14.8% [8.9%, 22.6%], Holm
-p < 0.001). No other category differs.
+The excess is concentrated in two subjects: college chemistry (17 of 62 labeled keys wrong,
+27.4% [16.9%, 40.2%]) and virology (10 of 26, 38.5% [20.2%, 59.4%]), both Holm p < 0.001 over
+56 subjects. High-school chemistry has 0 of 53. No other subject differs.
 
 Simulation (`results/simulation-v1/tables.md`, 100 synthetic models, 3,000 items, true rate
 3%, 10 panels per scenario):

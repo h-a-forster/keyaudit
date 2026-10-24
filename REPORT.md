@@ -16,7 +16,10 @@ section 14.
   - **1.48% [0.83%, 2.13%]** have a wrong key (narrow estimand).
   - **3.97% [2.68%, 5.25%]** have a wrong key, no correct option or several correct options
     (broad estimand).
-  - Chemistry stands out: 17 of 115 labeled items, 14.8% [8.9%, 22.6%], Holm p < 0.001.
+  - The excess is concentrated in two subjects: college chemistry, 17 of 62 labeled items,
+    27.4% [16.9%, 40.2%], and virology, 10 of 26, 38.5% [20.2%, 59.4%] (Holm p < 0.001 over
+    56 subjects). High-school chemistry has 0 of 53, so chemistry as a whole is about 9.7%
+    when its subjects are weighted by population size.
 - On synthetic panels the model ranks planted mis-keys well when its assumptions hold: AP
   0.95, against 0.89 for the best baseline. Its rate without labels is biased low, and it is
   inflated by about 2 points when correctly keyed "trick" items are present. With 25% of
@@ -94,16 +97,20 @@ the floored narrow interval is conservative). `tests/test_label_coverage.py` rer
 
 At the latest revision (`24ac2da5`, 2,883 labeled) the estimates agree to two decimals.
 
-**By category** (narrow estimand, canonical revision). Each category is tested against all
-others with a Fisher exact test, Holm-adjusted over 14 categories:
+**By category and subject** (narrow estimand, canonical revision). Each category is tested
+against all others with a Fisher exact test, Holm-adjusted over 14 categories. Category is a
+function of subject, so a category test cannot be stratified by subject; instead each subject
+is also tested against all other labeled items, Holm-adjusted over 56 subjects
+(`results/study-v1/tables.md`, changed after the audit):
 
-- Chemistry: 17 / 115 = 14.8% [8.85%, 22.61%], Holm p < 0.001.
-- No other category differs after adjustment. Rates range from 0.0% (business, 0 / 104) to
-  2.9% (health, 11 / 385).
-
-These tests treat the labeled items in a category as a simple random sample and ignore the
-subject strata. The chemistry effect is large enough that this is unlikely to change the
-conclusion, but no stratified test has been run.
+- College chemistry: 17 / 62 = 27.4% [16.85%, 40.23%], Holm p < 0.001. All 17 chemistry
+  positives are here; high-school chemistry has 0 / 53. The chemistry category result
+  (17 / 115 = 14.8% raw, Holm p < 0.001) is therefore a college-chemistry result. Weighted by
+  subject population size, chemistry is about 9.7%.
+- Virology: 10 / 26 = 38.5% [20.23%, 59.43%], Holm p < 0.001. It is most of the health
+  category's 11 positives, which is why health (2.9%) does not stand out as a category.
+- No other subject or category differs after adjustment. Category rates range from 0.0%
+  (business, 0 / 104) to 2.9% (health, 11 / 385).
 
 **Maintainer corrections.** After the canonical revision the MMLU-Pro maintainers changed 23
 keys (21 from `ori_mmlu`, 2 from `stemez`). Redux had labeled 10 of these items `ok` and had

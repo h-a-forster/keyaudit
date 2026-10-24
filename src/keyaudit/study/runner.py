@@ -222,6 +222,21 @@ def label_variance_floor(
     return out
 
 
+def _weighted_rate(
+    y: np.ndarray, labeled: np.ndarray, subject: np.ndarray, sel: np.ndarray
+) -> float:
+    """Population-weighted rate over the items in ``sel``: each labeled subject's rate weighted
+    by its population size (subjects without labeled items are left out)."""
+    num = den = 0.0
+    for sname in np.unique(subject[sel]):
+        m = sel & (subject == sname)
+        ml = m & labeled
+        if ml.any():
+            num += m.sum() * float(y[ml].mean())
+            den += m.sum()
+    return num / den if den else float("nan")
+
+
 def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str, Any]:
     """Classical stratified error rates of the MMLU-derived items from the Redux sample.
 
@@ -231,8 +246,9 @@ def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str
     for ``_other``): with ~1.5% positives most subject strata have no positives and zero
     estimated variance, and without the floor the nominal 95% interval covered ~86% in a
     simulation of this design (``tests/test_label_coverage.py``). Per-category
-    rates with Clopper-Pearson intervals on the labeled counts and Holm-adjusted Fisher exact
-    tests of each category against the rest.
+    rates with Clopper-Pearson intervals on the labeled counts, population-weighted
+    (subject-stratified) category rates, Holm-adjusted Fisher exact tests of each category
+    against the rest, and the same tests per subject (Holm over subjects).
     """
     from scipy.stats import fisher_exact
 
@@ -284,6 +300,29 @@ def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str
             }
         for c, padj in zip(names, stats.holm(pvals), strict=True):
             cats[c]["p_holm"] = float(padj)
+            cats[c]["weighted_rate"] = _weighted_rate(y, labeled, subject, category == c)
+        # Category is a function of subject, so a category effect can be driven by a single
+        # subject (audit finding 2: all chemistry positives are college_chemistry). Test each
+        # subject against all other labeled items, Holm-adjusted over subjects.
+        subs: dict[str, dict[str, Any]] = {}
+        spv = []
+        for sname in sorted(np.unique(subject[labeled])):
+            sel = labeled & (subject == sname)
+            n_s, k_s = int(sel.sum()), int(y[sel].sum())
+            rest_n, rest_k = int(labeled.sum()) - n_s, k_pos - k_s
+            p = float(fisher_exact([[k_s, n_s - k_s], [rest_k, rest_n - rest_k]])[1])
+            spv.append(p)
+            subs[sname] = {
+                "category": str(category[subject == sname][0]),
+                "N": int((subject == sname).sum()),
+                "n_labeled": n_s,
+                "positives": k_s,
+                "rate": k_s / n_s,
+                "ci": stats.clopper_pearson(k_s, n_s, conf),
+                "p_vs_rest": p,
+            }
+        for sname, padj in zip(sorted(subs), stats.holm(spv), strict=True):
+            subs[sname]["p_holm"] = float(padj)
         out[tier] = {
             "estimate": est.estimate,
             "se": est.se,
@@ -292,6 +331,7 @@ def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str
             "raw_rate": k_pos / max(1, int(labeled.sum())),
             "raw_ci": stats.clopper_pearson(k_pos, int(labeled.sum()), conf),
             "per_category": cats,
+            "per_subject": subs,
         }
     return out
 

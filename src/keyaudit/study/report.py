@@ -126,16 +126,36 @@ def _labels_section(lab: dict[str, Any]) -> list[str]:
     e = lab["label_estimates"]["canonical"]["narrow"]["per_category"]
     lines += [
         "Per category (narrow, canonical revision; Fisher exact test against all other "
-        "categories, Holm-adjusted over categories):",
+        "categories, Holm-adjusted over categories; the weighted rate weights each subject by "
+        "its population size):",
         "",
-        "| Category | Labeled | Positives | Rate | CP 95% | p (Holm) |",
-        "|---|---|---|---|---|---|",
+        "| Category | Labeled | Positives | Rate | CP 95% | Weighted rate | p (Holm) |",
+        "|---|---|---|---|---|---|---|",
     ]
     for c, v in sorted(e.items()):
+        wr = v.get("weighted_rate", float("nan"))
         lines.append(
             f"| {c} | {v['n_labeled']} | {v['positives']} | {100 * v['rate']:.1f}% | "
-            f"{_fmt_ci(v['ci'])} | {_fmt_p(v['p_holm'])} |"
+            f"{_fmt_ci(v['ci'])} | {100 * wr:.1f}% | {_fmt_p(v['p_holm'])} |"
         )
+    subs = lab["label_estimates"]["canonical"]["narrow"].get("per_subject", {})
+    if subs:
+        lines += [
+            "",
+            "Per subject (narrow, canonical revision; subjects with Holm p < 0.05 or at least 3 "
+            f"positives; Fisher exact test against all other labeled items, Holm over {len(subs)} "
+            "subjects):",
+            "",
+            "| Subject | Category | Labeled / population | Positives | Rate | CP 95% | p (Holm) |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for sname, v in sorted(subs.items()):
+            if v["p_holm"] < 0.05 or v["positives"] >= 3:
+                lines.append(
+                    f"| {sname} | {v['category']} | {v['n_labeled']} / {v['N']} | "
+                    f"{v['positives']} | {100 * v['rate']:.1f}% | {_fmt_ci(v['ci'])} | "
+                    f"{_fmt_p(v['p_holm'])} |"
+                )
     mc = lab["maintainer_corrections"]
     lines += [
         "",
