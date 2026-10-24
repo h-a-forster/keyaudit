@@ -53,7 +53,7 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/checkpoint.py` | UnitStore, run_units (<= 3 processes) | done (M1) |
 | `scripts/run_study.py` | resume-on-failure wrapper | done (M1) |
 | `src/keyaudit/hub.py` | HTTP, RangeFile, verified downloads, manifest | done (M2) |
-| `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | done (M2; adapter unverified on real data) |
+| `src/keyaudit/sources/` | leaderboard adapter + panel, MMLU-Pro revisions, Redux/Platinum joins | done (M2; adapter gate passes on real data) |
 | `src/keyaudit/matrix.py` | ResponseMatrix, option mapping, dedupe, families | done (M2) |
 | `src/keyaudit/irt.py` | truth curve, penalised JML, constrained item fits | done (M3) |
 | `src/keyaudit/keymix.py` | mis-keyed latent class EM | done (M3) |
@@ -93,8 +93,8 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24 (v0.1.0 build; independent audit received; findings 1-4 and 7 fixed and
-re-verified; 5 and 6 fixed afterwards, not re-audited).
+Updated: 2026-10-24 (v0.1.0 build; audit findings 1-4 and 7 fixed and re-verified, 5 and 6
+fixed afterwards; study-v1 model stages run; the model-run changes are not re-audited).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -117,8 +117,8 @@ Done (M2):
   adapter gate), `matrix` (option mapping by text hash, dedupe, families).
 - `scripts/check_data_facts.py` reproduced DESIGN 4.2 against the pinned revisions
   (`results/data-facts.json`; corrections logged in DESIGN 14).
-- Still blocked: the details adapter has never read a real repository (all content requests
-  403 on 2026-10-24). `scripts/probe_details.py` confirms the layout once one is readable.
+- The details adapter reads real repositories (commit `816b6b9`): the adapter gate reproduced
+  the reported score for 99 of 100 models on MMLU-Pro and all models on GPQA and BBH.
 
 Done (M3):
 - `irt`, `keymix`, `baselines`, `identifiability`, `simulate`; equivalence oracle to 1e-12;
@@ -132,10 +132,7 @@ Done (M4):
   differences with Holm, planted keys, leave-one-family-out stability).
 
 Done (M5 and v0.1.0, untagged):
-- Runner, report, simulation study and CLI. `results/study-v1/` (label-only: E_label narrow
-  1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%] after the audit's variance floor;
-  0/200 details repositories readable, so no model stages ran) and `results/simulation-v1/` (70/70 units). REPORT.md is written from
-  these; README and CHANGELOG match it.
+- Runner, report, simulation study and CLI. `results/simulation-v1/` (70/70 units).
 - After the runs: the model-rate bootstrap became items-only with the panel fixed (DESIGN 14,
   deviation 20). The simulation-v1 coverage units predate this and used the pigeonhole
   bootstrap; they are labelled as such and are not valid evidence (median interval 22
@@ -179,19 +176,35 @@ its own commit, from cached data only (no model calls):
 - Finding 8 (info): 4 worker processes ran at once during the v1 runs; no effect on results.
 Findings 1-4 and 7 were re-verified on 2026-10-24; the fixes for 5 and 6 were not.
 
-Remaining:
-1. Re-audit the fixes for findings 5 and 6.
-2. Optional: rerun simulation-v1 (scenario units) with the one-function calibrated
-   estimator, and measure item-bootstrap coverage in the `weak` and `families` scenarios
-   and at the DESIGN 7.2 size (not done; the in-region interval may be conservative).
-3. Run `pytest --runslow` on the v0.1.0 code.
-4. Owner action: accept the gates for the repositories in `results/study-v1/access.csv` and
-   provide a token, then run `scripts/probe_details.py`, the full study and the report, and
-   update REPORT.md with model-based, calibrated and validation results.
-5. Tag v0.1.0 and publish only after the audit and with the owner's go-ahead.
+Done (study-v1 model stages, 2026-10-24):
+- 101 candidates tried, 100 readable; matrices MMLU-Pro 12,027 x 96, GPQA 536 x 95, BBH
+  250 x 96 each. All stages ran (boot 100, lofo 25, planted 40 units; about 2 h wall, mostly
+  the MMLU-Pro bootstrap on 3 workers; the BrokenProcessPool seen during fetch did not occur
+  in the compute stages, so fetch ran at 1 worker and the rest at 3).
+- Headline (label-calibrated, MMLU-derived MMLU-Pro items): narrow 1.42% [0.78%, 2.07%],
+  broad 3.91% [2.62%, 5.19%]; variance ratio about 1 (the model scores add nothing over the
+  labels). Label-only: narrow 1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%].
+- Model-only rates are inflated by the correlated, weak panel (MMLU-Pro 22.4% in region,
+  25.4% overall; GPQA 54%, panel near chance): all 10 strongest models are in one family of
+  44; on flagged items they choose the key 10% and one shared other option 61% of the time.
+- Ranking vs Redux narrow: AP 0.080 [0.052, 0.142], random 0.019, best baseline
+  (top-decile disagreement) 0.071; only one-coin Dawid-Skene is beaten after Holm.
+- Changes made during the run (REPORT 3.7): GPQA canonical option mapping by text hash
+  (`80c4ded`), Platinum and maintainer-correction validation (`5262f3d`), tie-aware AP and a
+  residual variance floor in the calibrated estimator (`593ed9f`). Figures:
+  `scripts/make_figures.py` -> `docs/figures/`.
+- REPORT.md, README, CHANGELOG match `results/study-v1/`.
 
-Open questions for the owner:
-- Provide a token and accept gates for the ~100-150 candidate repositories (list produced by
-  `select_panel` in M2)?
-- Allow `evaleval/EEE_datastore` (MIT, 14 frontier models with MMLU-Pro samples) as an extra
-  source? It is not in the approved source list.
+Remaining:
+1. Re-audit the fixes for findings 5 and 6 and the model-run changes (REPORT 3.7).
+2. Measure coverage of the calibrated interval with the residual floor on the real design.
+3. Optional: rerun simulation-v1 with the current code (one-function calibration, tie-aware
+   AP), add a simulation scenario with one dominant family like the real panel, and measure
+   item-bootstrap coverage in the `weak` and `families` scenarios.
+4. Optional: recover the GPQA item dropped by case-folding (case-sensitive hash, re-fetch);
+   evaluate the Platinum MMLU high-school maths overlap; trace whether the 9 GPQA
+   duplicate-option items come from GPQA or the harness.
+5. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
+   is the only way the model-only rate could become informative; owner decision.
+6. Run `pytest --runslow` on the current code. Tag v0.1.0 and publish only with the owner's
+   go-ahead.

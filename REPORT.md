@@ -1,43 +1,55 @@
 # keyaudit report (v0.1.0)
 
-Date: 2026-10-24. Every number here comes from two committed result sets:
-`results/study-v1/` (the real study, which stopped before the model stages) and
-`results/simulation-v1/` (synthetic panels with known truth). Estimands and methods are
-defined in [docs/DESIGN.md](docs/DESIGN.md). Deviations from the design are listed in DESIGN
-section 14.
+Date: 2026-10-24. Every number here comes from committed result sets: `results/study-v1/`
+(the real study, all stages) and `results/simulation-v1/`, `results/items-cov-v1/`,
+`results/items-cov-v2/` (synthetic panels with known truth). Estimands and methods are
+defined in [docs/DESIGN.md](docs/DESIGN.md); deviations are listed in DESIGN section 14.
+Figures are drawn from `results/` by `scripts/make_figures.py`.
 
 **Summary.**
 
-- The model-based study on Open LLM Leaderboard responses has **not been run**. All 200
-  candidate details repositories were unreadable (194 gated, 6 broken), and the study needs
-  at least 60 models. So there is no model-based key-error rate for any real benchmark yet.
-- Label-only estimates for the 6,810 MMLU-derived MMLU-Pro test items, from the MMLU-Redux
-  2.0 relabels:
-  - **1.48% [0.83%, 2.13%]** have a wrong key (narrow estimand).
-  - **3.97% [2.68%, 5.25%]** have a wrong key, no correct option or several correct options
-    (broad estimand).
-  - Two subjects stand out (narrow): college chemistry, 17 of 62 labeled items,
-    27.4% [16.9%, 40.2%], and virology, 10 of 26, 38.5% [20.2%, 59.4%] (Holm p < 0.001 over
-    56 subjects). High-school chemistry has 0 of 53, so chemistry as a whole is about 9.7%
-    when its subjects are weighted by population size.
-- On synthetic panels the model ranks planted mis-keys well when its assumptions hold: AP
-  0.95, against 0.89 for the best baseline. Its rate without labels is biased low, and it is
-  inflated by about 2 points when correctly keyed "trick" items are present. With 25% of
-  items human-labeled, the calibrated estimator's bias stayed between -0.30 and +0.07 points
-  in every scenario.
-- The model-based bootstrap intervals in simulation-v1 are **not valid** (section 3.3). The
-  replacement item bootstrap was measured afterwards on 72 + 72 smaller panels: it covers
-  the rate inside the competence region (72/72 twice) but not the overall rate (34/72 and
-  35/72), which is about 1 point low. The overall rate now gets a wide region-bounded
-  interval instead.
-- An independent audit (2026-10-24) found eight issues. Fixed after it: the label-only
-  interval under-covered (now variance-floored; the intervals above are the corrected ones),
-  chemistry is reframed as college chemistry, a duplicate-stem sensitivity is added, and two
-  wording/count errors are corrected, including the old bootstrap's gap (section 3.3). The
-  two remaining low-severity findings were then addressed: the calibrated estimator now uses
-  one cross-fitted score function (section 3.1; the -0.30 point bias in `tricks` turned out
-  to be label-draw noise), and the item bootstrap's coverage is measured (section 3.3). These
-  last two fixes have not been re-audited.
+- **Headline: about 1.4% of MMLU-Pro's MMLU-derived items have a wrong key.** The
+  label-calibrated estimate (model scores calibrated on the MMLU-Redux 2.0 relabels, over
+  the 6,806 MMLU-derived items in the response matrix) is **1.42% [0.78%, 2.07%]** for a
+  wrong key (narrow) and **3.91% [2.62%, 5.19%]** for any key problem: wrong key, no correct
+  option or several correct options (broad). The model scores barely help: the interval is
+  as wide as the labels-only one (variance ratio 1.01), so this is in effect the
+  labels-only estimate (1.48%, 3.98% on the same items).
+- **A model panel alone overstates the rate 16- to 18-fold.** On 96 Open LLM Leaderboard
+  models the model-only rate for MMLU-Pro is 22.4% [21.3%, 23.4%] on the 78% of items the
+  panel can judge, and 25.4% over all items. For GPQA it is 54%. These are not key-error
+  rates. They measure how often the strongest models agree on the same non-key answer:
+  - all 10 strongest models fall in one response-agreement family of 44 of the 96 models;
+    the 10 are Qwen2 / Qwen2.5 base models or fine-tunes (mean pairwise agreement 0.68);
+  - on the MMLU-Pro items the model flags, those 10 models pick the key 10% of the time and
+    one shared other option 61% of the time;
+  - of the 699 labeled items flagged at q <= 0.10, only 34 (4.9%) are wrong keys by the
+    human labels;
+  - GPQA is near chance for this panel (median accuracy 0.31, best 0.44, chance 0.25).
+
+  This is the shared-blind-spot case the identifiability result predicts (DESIGN 5.2): from
+  responses alone, a correctly keyed item that strong models get wrong the same way looks
+  exactly like a mis-keyed one. It is a real result about leaderboard panels, and it is why
+  the headline rate is calibrated against human labels.
+- **As a ranking, the model finds wrong keys about 4x better than chance, and no better
+  than simple baselines.** Against the 56 Redux wrong keys among 2,892 labeled items its
+  average precision is 0.080 [0.052, 0.142] (random 0.019, ROC AUC 0.77). The best baseline,
+  top-decile disagreement, gets 0.071 [0.046, 0.110]; after Holm adjustment keymix beats only
+  one-coin Dawid-Skene (AP difference +0.038 [+0.014, +0.098]).
+- Label-only results (unchanged from the label-only run): college chemistry, 17 of 62
+  labeled items, 27.4% [16.9%, 40.2%], and virology, 10 of 26, 38.5% [20.2%, 59.4%], stand
+  out (Holm p < 0.001 over 56 subjects).
+- **GPQA data note.** In the leaderboard's GPQA details, 9 of the 546 items show duplicate
+  answer options to every model, 4 of them four identical options (one with all four
+  empty). These items cannot be answered as presented (section 3.6).
+- On synthetic panels (section 4) the model ranks planted mis-keys well when its
+  assumptions hold (AP 0.95), and the calibrated estimator stays within 0.3 points of the
+  truth in every scenario, including the trick-item scenario that mimics the real data.
+- An independent audit (2026-10-24) found eight issues, all addressed; the fixes for
+  findings 5 and 6, and the changes made during the model run (section 3.7), have not been
+  re-audited.
+
+![MMLU-Pro key-error rate: human labels vs the model panel alone](docs/figures/error_rate_gap.png)
 
 ## 1. What was run
 
@@ -45,33 +57,48 @@ section 14.
 |---|---|---|
 | Config | `configs/study.toml`, hash `a2773441...` | profile `default` (`keyaudit.study.simulation.PROFILES`) |
 | Seed | 20261024 | 20261024 |
-| Units | fetch 1/195, labels 1/1; `build` stopped (exit 3) | 70/70 (40 scenario panels, 30 coverage panels) |
-| Wall time | 12.5 min on 1 worker (mostly about 3.5 s per denied request) | 38.6 min on 3 workers |
-| Code | keyaudit 0.1.0.dev0 (M5); labels stage recomputed from cached data after the audit | keyaudit 0.1.0.dev0 (M5) |
+| Units | fetch 500, labels 1, build 6, fit 5, boot 100, lofo 25, planted 40, validate 5 (all ok) | 70/70 (40 scenario panels, 30 coverage panels) |
+| Wall time | about 2 h: fetch 23 min plus a 5 min GPQA re-fetch (1 worker), build 10 min, fit 1 min, bootstrap 52 min, planted keys 20 min, the rest 2 min (3 workers) | 38.6 min on 3 workers |
+| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix) | keyaudit 0.1.0.dev0 (M5) |
 
-`results/study-v1/provenance.json` records the data revisions (19 MMLU-Pro revisions,
-MMLU-Redux 2.0, Platinum and the leaderboard contents) and the library versions (numpy
-2.4.6, scipy 1.18.1, pyarrow 26.0.0, huggingface-hub 2.2.0).
+The configuration projected 20-30 minutes; the MMLU-Pro bootstrap (200 refits of a
+12,027 x 96 matrix, about 44 s each) dominated. `results/study-v1/provenance.json` records
+the data revisions and library versions (numpy 2.4.6, scipy 1.18.1, pyarrow 26.0.0,
+huggingface-hub 2.2.0).
 
-**Panel access.** `fetch` tried 200 candidate models: 100 targets plus reserves, by accuracy
-quintile.
+**Panel.** `fetch` tried 101 candidate models (100 targets by accuracy quintile, one
+replacement): 100 readable, 1 failed (HTTP 400, no parquet conversion for its MMLU-Pro
+details). One GPQA unit also failed with HTTP 400 (`prithivMLmods/WebMind-7B-v0.1`).
 
-- 194 returned HTTP 403. The account behind the token had not accepted those repositories'
-  conditions. Only the account owner can accept them, and there is no API for it.
-- 6 failed: 5 returned HTTP 400 (no parquet conversion) and 1 returned 404 (repository
-  missing).
-- 0 were readable, so `build` raised its precondition error.
+**Matrices** (`build`; counts from the build units, summarised in `tables.md`):
 
-The full list is in `results/study-v1/access.csv`. The details adapter has therefore never
-read a real repository. It is tested only on synthetic samples shaped like the documented
-schema.
+| Benchmark | Items | Models | Dropped |
+|---|---|---|---|
+| MMLU-Pro | 12,027 of 12,032 | 96 | 5 items whose options could not be matched across key revisions |
+| GPQA (extended) | 536 of 546 | 95 | 10 items with duplicate option texts (section 3.6) |
+| BBH logical deduction (3 objects) | 250 | 96 | none |
+| BBH navigate | 250 | 96 | none |
+| BBH object counting | 250 | 96 | none |
+
+- **Adapter gate.** Each model's correct count, recomputed from the parsed responses, must
+  equal its reported score times the item count. It held for 99 of 100 models on MMLU-Pro
+  and for every model on GPQA and BBH. The exception, `fblgit/TheBeagle-v2beta-32B-MGS`
+  (7,117 correct against 7,112 reported), is excluded.
+- **Key revision.** The 100 runs were scored against five different MMLU-Pro key revisions
+  (fingerprinted by key text: `014c8cf5` 43 runs, `73713573` 29, `7db2dc66` 10,
+  `241199e1` 9, `55abfa5a` 9). Responses are mapped by option text to the majority revision
+  `014c8cf5`, which is also the revision the label-only estimates use.
+- **Near-duplicate models.** Three models agreeing with a higher-priority model on more than
+  95% of MMLU-Pro items were dropped, among them `MaziyarPanahi/calme-2.4-rys-78b`, a
+  near-copy of `dfurman/CalmeRys-78B-Orpo-v0.1` (agreement 0.992).
+- **Families.** Clustering on response agreement gives 34 families. The largest has 44 of
+  the 96 models and contains all 10 strongest.
 
 ## 2. Label-only results (MMLU-Pro, MMLU-derived items)
 
 **Population:** the 6,810 MMLU-Pro test items whose source is `ori_mmlu`, at the canonical
-revision `014c8cf5`. That is the revision that was current when the leaderboard stopped
-evaluating. Without a panel there is nothing to fingerprint, so this choice is a fallback
-(DESIGN 14, deviation 15).
+revision `014c8cf5`. The panel confirms this choice: it is the key revision 43 of the 100
+leaderboard runs were scored against, more than any other (section 1).
 
 **Labels:** MMLU-Redux 2.0 relabels, joined by question text.
 
@@ -146,14 +173,186 @@ These counts alone cannot tell which.
 rejected in `navigate` or `logical_deduction_three_objects` (`labels.json`,
 `platinum_counts`).
 
-**Not available without a panel:**
+## 3. Model-based results
 
-- the label-calibrated estimate, which needs model scores;
-- model-based and transfer estimates for GPQA and BBH;
-- validation of the ranking against human labels;
-- the suspect-item list.
+All rates are percentages of items. Intervals are 95%. `E_model` is the model-based rate
+under assumptions A1-A2 (DESIGN 5); `E_label` is the rate as defined by the MMLU-Redux
+labels.
 
-## 3. Simulation study (known truth)
+### 3.1 Headline: label-calibrated MMLU-Pro rate
+
+Population: the 6,806 MMLU-derived (`ori_mmlu`) MMLU-Pro items in the response matrix, of
+which 2,892 carry a Redux label (4 and 1 fewer than the label-only population, because
+`build` dropped 5 unmappable items). The model's posterior is calibrated on the labeled
+items (5-fold cross-fitted Platt scaling, one score function for all items) and plugged
+into the stratified difference estimator over 56 subject strata. Each stratum's residual
+variance is floored at its category's pooled labeled residual variance, the analogue of the
+label-only floor of audit finding 1 (added during this run, section 3.7).
+
+| Estimand | Calibrated estimate (95% CI) | Stratified bootstrap check | Labels only, same items | Variance ratio |
+|---|---|---|---|---|
+| `E_label` narrow (wrong key) | **1.42% [0.78%, 2.07%]** | [0.93%, 2.06%] | 1.48% | 1.01 |
+| `E_label` broad (any key problem) | **3.91% [2.62%, 5.19%]** | [2.66%, 5.35%] | 3.98% | 1.00 |
+
+The variance ratio (labels-only variance over calibrated variance) is about 1: the model
+scores carry almost no information about which labeled items are wrong beyond the strata,
+so the calibrated estimate is in effect the labels-only estimate. The interval's coverage
+with the residual floor has not been measured on this design.
+
+Transfer to the non-MMLU sources (calibrated scores applied outside the labeled
+population; an extrapolation, not an estimate): narrow 1.96% [1.49%, 2.48%] for STEM
+websites, 2.49% [1.88%, 3.15%] for TheoremQA and 2.36% [1.78%, 2.98%] for SciBench. Given
+how weakly the scores track the labels (section 3.3), these say little.
+
+### 3.2 Model-only rates and the shared blind spot
+
+| Benchmark | Items x models | tau (J_eff) | Competence region | `E_model` in region | `E_model` all items (region-bounded CI) | Flagged at q <= 0.10 |
+|---|---|---|---|---|---|---|
+| MMLU-Pro | 12,027 x 96 | 1.69 (56.9) | 78% | 22.43% [21.30%, 23.39%] | 25.37% [16.71%, 39.91%] | 2,953 |
+| GPQA | 536 x 95 | 1.95 (48.6) | 94% | 54.38% [49.10%, 57.73%] | 54.03% [46.17%, 60.25%] | 302 |
+| BBH logical deduction | 250 x 96 | 2.26 (42.5) | 99% | 0.42% [0.00%, 1.26%] | 0.43% [0.00%, 2.05%] | 1 |
+| BBH navigate | 250 x 96 | 11.18 (8.6) | 100% | 12.35% [4.41%, 19.17%] | 12.35% [4.41%, 19.17%] | 1 |
+| BBH object counting | 250 x 96 | 2.00 (47.9) | 61% | 7.33% [0.01%, 24.55%] | 11.55% [0.01%, 53.83%] | 6 |
+
+In-region intervals are item-bootstrap percentiles (panel fixed, B = 200); they cover only
+the item-sampling spread, not the bias described next.
+
+**These rates are not key-error rates.** The MMLU-Pro model rate is 16 to 18 times the
+human-label rate, and the GPQA rate is above half. The evidence that this comes from the
+panel and not from the benchmarks:
+
+- **One family dominates the top.** The 10 strongest models (by fitted ability; MMLU-Pro
+  accuracy 0.60 on average, best 0.70) all belong to one response-agreement family of 44 of
+  the 96 models. They are Qwen2 / Qwen2.5 base models and fine-tunes, and agree with each
+  other on 68% of MMLU-Pro items. The composite-likelihood correction treats the panel as
+  57 independent models (J_eff), far more than this structure supports.
+- **They share wrong answers.** On the 2,994 MMLU-Pro items with posterior above 0.5, the
+  10 strongest models choose the key 10.1% of the time and the model's proposed option
+  61.1% of the time; the 30 weakest choose them 10.7% and 17.7% of the time. A shared
+  misconception among strong models is exactly what A1-A2 rule out and what the model
+  reads as a wrong key.
+- **The labels disagree.** Of the 699 labeled items flagged at q <= 0.10, 34 are Redux wrong
+  keys: precision 4.9% [3.4%, 6.7%] (narrow), 6.6% [4.9%, 8.7%] (broad). The model's own
+  FDR estimate for this set is 10%.
+- **GPQA is near chance for this panel.** Median accuracy 0.31, best 0.44, with 4 options.
+  On the flagged GPQA items the 10 strongest models choose the key 9.6% of the time and the
+  proposed option 75.6%. Nothing can be learned about GPQA's keys from this panel.
+- **BBH navigate** has tau 11.2: the panel behaves like about 9 independent models, and only
+  1 item reaches q <= 0.10 despite the 12% rate.
+
+The category rates follow the same pattern (MMLU-Pro `E_model`: chemistry 35%, physics 33%,
+law 31%, psychology 13%, biology 9%): high where 2024 open models are weak, not where the
+labels find errors (the labels' top subjects are college chemistry and virology).
+
+### 3.3 Validation of the suspect ranking
+
+![Average precision of the suspect ranking against MMLU-Redux wrong keys](docs/figures/ranking_vs_baselines.png)
+
+**MMLU-Redux 2.0** (2,892 labeled MMLU-Pro items; stratified bootstrap with 2,000 resamples
+for keymix, 500 for baselines; paired AP differences Holm-adjusted over the 5 baselines):
+
+| Score | AP narrow (56 positives) | ROC AUC narrow | AP broad (97 positives) | ROC AUC broad |
+|---|---|---|---|---|
+| keymix | **0.080 [0.052, 0.142]** | 0.773 [0.713, 0.829] | **0.078 [0.058, 0.120]** | 0.695 [0.643, 0.746] |
+| Top-decile disagreement | 0.071 [0.046, 0.110] | 0.768 | 0.072 [0.054, 0.103] | 0.681 |
+| Item-total correlation | 0.057 [0.043, 0.087] | 0.782 | 0.066 [0.054, 0.092] | 0.695 |
+| Scalability | 0.057 [0.043, 0.087] | 0.782 | 0.066 [0.054, 0.092] | 0.695 |
+| 2PL sign test | 0.056 [0.042, 0.081] | 0.777 | 0.065 [0.053, 0.087] | 0.693 |
+| One-coin Dawid-Skene | 0.042 [0.034, 0.051] | 0.732 | 0.060 [0.051, 0.073] | 0.685 |
+| Random ranking | 0.019 | 0.5 | 0.034 | 0.5 |
+
+- keymix has the highest AP but the margin is small. Paired differences (narrow): +0.009
+  [-0.017, +0.059] over top-decile disagreement, +0.022 to +0.023 over item-total,
+  scalability and sign test (Holm p 0.47 each), and +0.038 [+0.014, +0.098] over one-coin
+  Dawid-Skene (Holm p 0.003). Broad: no difference survives Holm (smallest p 0.15).
+- Precision at k (narrow): 0.08, 0.14, 0.14, 0.095 at k = 25, 50, 100, 200 (top-decile
+  disagreement 0.12, 0.14, 0.12, 0.085). Recall at k = 200: 34% [22%, 48%].
+- At q <= 0.10: recall 61% [47%, 74%] (narrow), precision 4.9%. Recall is 30 of 44 inside
+  the competence region (68% [52%, 81%]) and 3 of 12 outside (25% [5%, 57%]).
+- Redux labels the 4-option MMLU item; MMLU-Pro adds 6 distractors. A flagged item whose
+  proposed option is an added distractor may be an MMLU-Pro error Redux could not see, so
+  precision against Redux can understate true precision. That cannot plausibly explain a
+  4.9% precision.
+
+**Maintainer corrections** (items whose key text changed after `014c8cf5`: 23 in the matrix,
+22 substantive; recall-oriented, not a random sample of errors): 18 of 23 are flagged at
+q <= 0.10, but the flags cover 25% of all items. AP 0.012 [0.006, 0.036] against a random
+0.0019 (ROC AUC 0.80); top-decile disagreement 0.011, item-total, scalability and sign
+test 0.006, one-coin Dawid-Skene 0.004.
+
+**Platinum** (BBH; aggregates only, per-item labels are CC-BY-SA and stay local; all 200
+reviewed items per task join the matrix):
+
+| Task | Platinum-clean items flagged at q <= 0.10 | Rejected items flagged |
+|---|---|---|
+| Logical deduction (3 objects) | 1 / 200 (0.5% [0.0%, 2.8%]) | no rejected items |
+| Navigate | 1 / 200 (0.5% [0.0%, 2.8%]) | no rejected items |
+| Object counting | 5 / 190 (2.6% [0.9%, 6.0%]) | 1 / 10 |
+
+On object counting the ranking puts Platinum's 10 rejected items ahead of chance (AP 0.146
+[0.098, 0.320], random 0.05), as do the item-total (0.179), scalability (0.160) and sign
+test (0.156) baselines. Ten positives support no comparison. The MMLU high-school maths
+overlap with Platinum (3 rejected items) was not evaluated.
+
+### 3.4 Planted keys and stability (MMLU-Pro)
+
+- **Planted keys.** In each of 20 replicates per mode, 2% of the Redux-`ok` items (0.45% of
+  the matrix) had their key moved to a random distractor or to the most chosen distractor,
+  and the model was refitted. Recall at q <= 0.10: 0.90 for random distractors (0.96 inside
+  the region) and 0.69 for the most chosen distractor (0.74). The estimated rate rose by
+  0.38 and 0.28 points against the 0.45 points planted. With a quarter of all items already
+  flagged, high recall is cheap; these numbers show planted errors are detectable, not that
+  the flags are precise.
+- **Leave-one-family-out.** Refitting without each of the 5 largest families, 1,529 of the
+  2,953 flagged MMLU-Pro items stay flagged in all 5 refits and 2,712 in at least 4 (mean
+  stability 0.88). Stability here does not mean correctness: the shared answers that drive
+  the flags survive dropping any single family.
+
+### 3.5 Suspect list
+
+`results/study-v1/suspects.csv` lists the 3,263 items flagged at q <= 0.10 (2,953 MMLU-Pro,
+302 GPQA, 8 BBH) with key, proposed option, posterior, q-value, competence and LOFO
+stability. GPQA and BBH items appear only as hashed ids. Given section 3.2, a flag is a
+reason to look at an item, not evidence that its key is wrong.
+
+### 3.6 GPQA option mapping and duplicate options
+
+The harness shuffles GPQA's four options separately in every run, so the same option has a
+different letter in different models' details. `build` maps each run's options by text hash
+(the text itself is never stored) to one canonical order and keys each item by the text of
+its keyed option; across the 95 models no item's keyed text differs.
+
+Ten of the 546 items were dropped because two or more options share a text hash:
+
+- 9 items show exact duplicate options in the details, identically in all 99 runs: 4 with
+  four identical options (one of them with all four options empty), 1 with two distinct
+  and 4 with three distinct options. Hashed ids: `34390788197513506`,
+  `7142931183888507235`, `7471228450886323127`, `8901076887358046140` (four identical);
+  `3568654531071604508` (two distinct); `1779738472928335245`, `7766578627503547028`,
+  `5801353151595536050`, `7902464235269571824` (three distinct). This was checked on the
+  option strings read directly from the parquet files, so it is not a mapping error. It was
+  not checked whether the duplicates come from GPQA itself or from the harness's
+  preprocessing. Models were scored on these items as if they were answerable.
+- 1 item (`768023193237076007`) has four distinct options, two pairs of which differ only in
+  letter case. The hash lower-cases text, so it was dropped by mistake; recovering it needs
+  a case-sensitive hash and a re-fetch.
+
+### 3.7 Changes made during the model run
+
+- GPQA canonical mapping (`80c4ded`, section 3.6). Before it, `build` would have dropped
+  nearly all GPQA items because position keys disagree across runs.
+- Platinum and maintainer-correction validation with baselines (`5262f3d`).
+- **AP with ties** (`593ed9f`). AP now treats tied scores as one threshold. The old version
+  broke ties by position, and the stratified bootstrap lists resampled positives first, so
+  for tie-heavy baselines (top-decile disagreement, one-coin Dawid-Skene) the bootstrap
+  intervals excluded their own point estimates and the paired tests wrongly favoured those
+  baselines. The validate stage was rerun. The simulation tables in section 4.2 used the old
+  AP; for tie-heavy baselines their point values depend on item order (which is unrelated
+  to the planted keys), and they were not recomputed.
+- Residual variance floor in the calibrated estimator (`593ed9f`, section 3.1). Without it
+  the narrow interval was [0.92%, 1.93%].
+
+## 4. Simulation study (known truth)
 
 The sizes follow DESIGN 7.2: 100 models, 3,000 items, K = 10 options, a true key-error rate
 of 3% and 10 item groups. Each scenario has 10 replicate panels. Intervals are 95% intervals
@@ -166,7 +365,7 @@ for the mean over replicates. The scenarios are:
 - `tricks`: 3% of items have a correct key but violate A1-A2. Stronger models are drawn to
   one wrong option on them, which is the shared blind spot of DESIGN 5.2.
 
-### 3.1 Rates (percent)
+### 4.1 Rates (percent)
 
 | Scenario | True rate | `E_model`, all items | Bias of `E_model` | Region share | `E_model` in region (true) | Calibrated, 25% labeled | Calibrated CI coverage |
 |---|---|---|---|---|---|---|---|
@@ -207,7 +406,7 @@ estimand is calibrated against human labels.
 - Interval coverage was 37/40 across scenarios, and 8/10 in `tricks`. With 10 replicates per
   scenario, these counts cannot tell 95% coverage apart from about 75%.
 
-### 3.2 Ranking and operating point
+### 4.2 Ranking and operating point
 
 Average precision against the planted mis-keys, and the operating point at q <= 0.10:
 
@@ -227,7 +426,7 @@ Average precision against the planted mis-keys, and the operating point at q <= 
 These figures are means over 10 panels. Replicate intervals are in `summary.json`, and no
 paired test between methods was run on the simulation.
 
-### 3.3 Bootstrap intervals for the model rate
+### 4.3 Bootstrap intervals for the model rate
 
 **The pigeonhole bootstrap used in simulation-v1 is not valid.** The coverage panels
 (30 panels of 1,000 items and 60 models, B = 40) resampled both items and models. They
@@ -272,10 +471,10 @@ about 15 minutes each on 3 workers).
   (DESIGN 14, deviation 22).
 
 These checks use independent models without trick items. With shared blind spots
-(`tricks`, section 3.1) the in-region rate itself is about 2 points too high, and its
+(`tricks`, section 4.1) the in-region rate itself is about 2 points too high, and its
 interval would not cover; only labels detect that.
 
-## 4. Limitations
+## 5. Limitations
 
 - **Identifiability.** The model-based rate is valid only under A1 (truth curves rise with
   ability) and A2 (choice among distractors does not depend on ability).
@@ -285,19 +484,19 @@ interval would not cover; only labels detect that.
   - The `tricks` scenario shows the size of the effect: at a 3% trick rate the model rate is
     about 2 points too high.
   - Outside the competence region only worst-case bounds are possible.
-  - On real data the share of such items is unknown. A model-based rate without labels is
-    therefore an estimate under assumptions that cannot be checked from responses, not a
-    measurement.
+  - On the real panel this is not hypothetical: the model-only MMLU-Pro rate is 16-18 times
+    the human-label rate (section 3.2). A model-based rate without labels is an estimate
+    under assumptions that cannot be checked from responses, and here they clearly fail.
 - **Shared blind spots.** Leaderboard models share training data, base models and possibly
   contaminated corpora. A misconception common to most strong models is exactly the trick
-  case. Families of fine-tunes also shrink the effective panel size. Real panels may be more
-  correlated than the `families` scenario, which already cut recall at q <= 0.10 from 0.82
-  to 0.57.
+  case. Families of fine-tunes also shrink the effective panel size. The real panel is far
+  more correlated than the `families` scenario: one family holds 44 of 96 models and all 10
+  strongest, and the composite-likelihood scale (J_eff 57 on MMLU-Pro) does not capture it.
 - **Sample of models.** The planned panel is the open-weight models that the Open LLM
   Leaderboard evaluated until early 2025. They are much weaker than current frontier models,
   which is why the `weak` scenario exists. A different panel sees different items, so
-  competence-region shares and rates do not carry over to stronger panels. No panel was
-  drawn in this run.
+  competence-region shares and rates do not carry over to stronger panels. On GPQA this
+  panel is near chance, so it says nothing about GPQA's keys.
 - **Human labels are not ground truth.**
   - The MMLU-Pro maintainers' 22 later key changes include 10 items (6 distinct Redux
     questions) that Redux labeled `ok`, and they corrected none of Redux's 56 `wrong_groundtruth` items.
@@ -306,19 +505,29 @@ interval would not cover; only labels detect that.
   - The Redux overlap covers only the MMLU-derived 57% of MMLU-Pro. The other 43% (STEM
     websites, TheoremQA, SciBench) has no human labels here, and nothing is claimed for it.
 - **Simulation is not reality.** The simulated responses come from the model's own family,
-  with deliberate violations in `weak`, `families` and `tricks`. The good results in 3.1 and
-  3.2 are therefore a best case. With 10 replicates per scenario, the coverage statements are
+  with deliberate violations in `weak`, `families` and `tricks`. The good results in 4.1 and
+  4.2 are therefore a best case; the real-data ranking (AP 0.08) is far below the
+  simulated one (AP 0.87-0.95). With 10 replicates per scenario, the coverage statements are
   weak.
-- **Untested on real data.** The leaderboard details adapter and the GPQA and BBH matrix
-  construction have never read a real repository.
+- **Calibrated interval.** The residual variance floor in the calibrated estimator was added
+  during this run by analogy with the label-only floor; its coverage on this design has not
+  been simulated. With a variance ratio of about 1 the calibrated and labels-only intervals
+  agree, which is some reassurance.
+- **Data handling.** 10 GPQA items were dropped (9 with duplicate options in the details, 1
+  by a case-folding hash), 5 MMLU-Pro items could not be mapped across key revisions, one
+  model failed the adapter gate and one GPQA unit could not be read. The runs were scored
+  against five different MMLU-Pro key revisions; responses are mapped by option text to
+  `014c8cf5`, so a model's "correct" here can differ from its leaderboard scoring on items
+  whose key changed.
 - **One independent audit, addressed but the last fixes not re-audited.** The audit of
   2026-10-24 checked the label-only numbers, the joins and this report against `results/`.
   A re-verification confirmed the fixes for findings 1-4 and 7. The fixes for findings 5
   (one score function) and 6 (item-bootstrap coverage, region-bounded overall interval) came
-  later and have not been re-audited. The item-bootstrap coverage is measured on one
-  scenario (independent models) at a smaller panel size than DESIGN 7.2.
+  later and have not been re-audited, and neither have the model-run changes of section
+  3.7. The item-bootstrap coverage is measured on one scenario (independent models) at a
+  smaller panel size than DESIGN 7.2.
 
-## 5. Reproducing
+## 6. Reproducing
 
 ```sh
 uv sync --group dev
@@ -328,7 +537,7 @@ uv run keyaudit report --config configs/study.toml
 ```
 
 Rerunning `simulate` into an existing run directory reuses its finished units, including the
-pigeonhole coverage units. The item-bootstrap coverage runs of section 3.3:
+pigeonhole coverage units. The item-bootstrap coverage runs of section 4.3:
 
 ```sh
 uv run keyaudit simulate --profile coverage --seed 20261024 --out runs/items-cov-v1 --results results/items-cov-v1 --workers 3

@@ -10,16 +10,13 @@ model runs, no LLM judge). It gives intervals and a ranked list of suspect items
 the rate against human relabels, and says plainly what responses alone cannot identify.
 
 **Status: v0.1.0, pre-release.** The method, the data layer and the study pipeline are
-implemented and tested. The model-based study on the Open LLM Leaderboard has **not** been
-run yet: every per-sample details repository is gated, and their conditions must be accepted
-on the Hugging Face Hub by the account whose token is used (see [Data access](#data-access)).
-What has been run is in [REPORT.md](REPORT.md): label-only estimates from MMLU-Redux 2.0
-and a simulation study of the method. An independent audit (2026-10-24) found eight issues;
-the label-only interval (now variance-floored), the chemistry framing (now college chemistry
-and virology), the duplicate-stem sensitivity and two wording/count errors are fixed. The two
-low-severity model-estimator findings were addressed afterwards (one score function in the
-calibrated estimator; item-bootstrap coverage measured, see REPORT.md 3.3); these later fixes
-have not been re-audited.
+implemented and tested, and the study has been run on 96 Open LLM Leaderboard models
+(MMLU-Pro, GPQA and three BBH tasks). Results are in [REPORT.md](REPORT.md). In short: about
+1.4% of MMLU-Pro's MMLU-derived items have a wrong key by the human-label-calibrated
+estimate, while the model panel alone suggests 22-25%, because the strongest leaderboard
+models share the same wrong answers. An independent audit (2026-10-24) found eight issues,
+all addressed; the fixes for the last two and the changes made during the model run have not
+been re-audited.
 
 ## Why
 
@@ -45,7 +42,7 @@ calibrated against a random human-labeled sample instead (docs/DESIGN.md section
 - **Three kinds of estimate.** Label-calibrated: a stratified difference estimator, i.e.
   prediction-powered inference with a finite-population correction. Model-based: a bootstrap
   over items with the panel held fixed; in simulation its interval covers the rate inside the
-  competence region but not the overall rate (REPORT.md 3.3).
+  competence region but not the overall rate (REPORT.md 4.3).
   Transfer: labelled as an extrapolation. Each comes with worst-case bounds outside the
   panel's competence region.
 - **Validation.** AP, ROC AUC and precision/recall at k against MMLU-Redux 2.0, Platinum and
@@ -82,6 +79,7 @@ uv run keyaudit simulate --profile quick --out runs/sim-quick --results results/
 uv run python scripts/run_study.py --config configs/study.toml   # resumes after failures
 uv run keyaudit status --config configs/study.toml
 uv run keyaudit report --config configs/study.toml               # writes results/study-v1/
+uv run --extra plot python scripts/make_figures.py              # docs/figures/ from results/
 ```
 
 As a library:
@@ -97,34 +95,38 @@ fit.proposed  # most probable alternative option
 fit.competence  # whether the panel can see a mis-key on this item at all
 ```
 
-## Example output
+## Results
 
-Label-only estimate for the MMLU-derived MMLU-Pro items (`results/study-v1/tables.md`). It
-needs no model panel:
+From [REPORT.md](REPORT.md) (`results/study-v1/`; 96 models, 12,027 MMLU-Pro items, 2,892 of
+them labeled by MMLU-Redux 2.0; 95% intervals):
 
-| Estimand | Positives | Stratified estimate | 95% CI |
-|---|---|---|---|
-| Narrow: MMLU-Redux `wrong_groundtruth` | 56 | 1.48% | [0.83%, 2.13%] |
-| Broad: also no correct or multiple correct answers | 97 | 3.97% | [2.68%, 5.25%] |
+| MMLU-Pro, MMLU-derived items | Key-error rate |
+|---|---|
+| Human-label calibrated, wrong key (narrow) | **1.42% [0.78%, 2.07%]** |
+| Human-label calibrated, any key problem (broad) | **3.91% [2.62%, 5.19%]** |
+| Model panel alone, items it can judge | 22.43% [21.30%, 23.39%] |
+| Model panel alone, all items | 25.37% (region-bounded [16.71%, 39.91%]) |
 
-Two subjects stand out: college chemistry (17 of 62 labeled keys wrong,
-27.4% [16.9%, 40.2%]) and virology (10 of 26, 38.5% [20.2%, 59.4%]), both Holm p < 0.001 over
-56 subjects. High-school chemistry has 0 of 53. No other subject differs.
+![MMLU-Pro key-error rate: human labels vs the model panel alone](docs/figures/error_rate_gap.png)
 
-Simulation (`results/simulation-v1/tables.md`, 100 synthetic models, 3,000 items, true rate
-3%, 10 panels per scenario):
+- **The model-only rate is not a key-error rate.** All 10 strongest models sit in one family
+  of 44 near-alike models (Qwen2 / Qwen2.5 and fine-tunes). On flagged items they pick the
+  key 10% of the time and one shared other answer 61% of the time. Responses alone cannot
+  tell such a shared blind spot from a wrong key; that is the identifiability limit above,
+  observed on real data. For GPQA the panel is near chance (median accuracy 0.31) and the
+  model-only rate (54%) means nothing.
+- **Ranking.** Against the 56 human-confirmed wrong keys, the suspect ranking has average
+  precision 0.080 [0.052, 0.142] (random 0.019, ROC AUC 0.77). That is better than chance
+  but not clearly better than the best baseline, top-decile disagreement (0.071); only
+  one-coin Dawid-Skene is beaten after Holm adjustment.
+- **Label-only findings.** College chemistry (17 of 62 labeled keys wrong) and virology (10
+  of 26) stand out (Holm p < 0.001 over 56 subjects).
+- **GPQA data note.** In the leaderboard's GPQA details, 9 of 546 items show duplicate
+  options to every model (4 with four identical options).
 
-| Scenario | True rate | Model-only rate | Calibrated, 25% labeled | AP keymix / best baseline |
-|---|---|---|---|---|
-| independent models | 2.87% | 2.45% | 2.86% | 0.95 / 0.89 |
-| weak panel | 2.91% | 2.43% | 2.98% | 0.87 / 0.64 |
-| model families | 3.04% | 1.93% | 3.06% | 0.91 / 0.86 |
-| 3% trick items (shared blind spot) | 3.02% | 5.05% | 2.73% | 0.55 / 0.55 |
-
-The model-only rate is biased low outside the competence region and too high when correctly
-keyed items fool strong models, which responses alone cannot detect. The label-calibrated
-rate stays close to the truth. The model-rate bootstrap intervals from this run are not
-valid. [REPORT.md](REPORT.md) has the details and the limitations.
+On synthetic panels where its assumptions hold, the model recovers planted mis-keys well
+(AP 0.87-0.95, `results/simulation-v1/`); the real panel is far more correlated than those
+simulations.
 
 ## Data access
 
@@ -138,7 +140,8 @@ valid. [REPORT.md](REPORT.md) has the details and the limitations.
 
 To run the model stages, use a free Hugging Face account. Open each repository listed in
 `results/study-v1/access.csv` and accept its conditions in a browser, then provide a read
-token as `HF_TOKEN`. keyaudit never accepts terms on anyone's behalf. It never prints, logs
+token as `HF_TOKEN`. The default study took about 2 hours (mostly the MMLU-Pro bootstrap on 3
+workers). keyaudit never accepts terms on anyone's behalf. It never prints, logs
 or stores the token, and it never writes GPQA question text to any output.
 
 ## Validation of the code

@@ -5,6 +5,34 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Study results
+
+- The model stages ran on 100 readable leaderboard models (96 after the adapter gate and
+  dedupe). Headline (MMLU-Pro, MMLU-derived items, label-calibrated): narrow 1.42%
+  [0.78%, 2.07%], broad 3.91% [2.62%, 5.19%]. The model-only rate (22.4% in the competence
+  region, 25.4% overall; GPQA 54%) is inflated by a correlated, weak panel: all 10 strongest
+  models are one family of 44. Suspect ranking AP 0.080 [0.052, 0.142] against Redux wrong
+  keys (random 0.019; best baseline 0.071). REPORT.md section 3, figures in `docs/figures/`
+  (`scripts/make_figures.py`).
+
+### Fixed
+
+- GPQA: the harness shuffles options per run, so position keys disagreed across models.
+  Fetch now keeps option text hashes (never text) and build maps every run to one canonical
+  order by hash; items with duplicate options, differing option sets or differing keyed text
+  are dropped (10 of 546, 9 with duplicate options in the leaderboard details).
+- `average_precision` treats tied scores as one threshold; position tie-breaking let the
+  stratified bootstrap inflate AP for tie-heavy baselines.
+- The label-calibrated estimator floors each stratum's residual variance at its category's
+  pooled labeled residual variance (analogue of the label-only floor).
+
+### Added
+
+- Validation: Platinum BBH check (flags among clean and rejected items, AP vs baselines) and a
+  maintainer-corrections ranking with baselines.
+
+### Audit fixes
+
 Fixes from the independent audit of 2026-10-24 (findings 1-7; the fixes for 5 and 6 have not
 been re-audited).
 

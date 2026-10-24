@@ -679,3 +679,17 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     points, so it is valid but wide. The report leads with the in-region rate. Measured only
     for independent models without trick items; in `tricks` the in-region rate itself is
     biased about +2 points, and no bootstrap repairs that.
+23. **GPQA options mapped by text hash (study-v1 model run).** The leaderboard harness
+    shuffles GPQA's options per run, so position keys disagree across models. Fetch reads
+    `doc.choice1..4` and keeps 32-bit text hashes only; build orders each item's options by
+    hash (`matrix.canonical_options`) and keys it by the keyed option's text. Items with
+    duplicate option hashes, differing option sets or differing keyed text are dropped
+    (study-v1: 10 of 546, all for duplicate options; 1 of them only by case-folding).
+24. **Tie-aware average precision.** AP sums recall gain x precision over distinct score
+    thresholds (tied scores are one threshold). Position tie-breaking had made the
+    stratified bootstrap, which lists resampled positives first, inflate AP for tie-heavy
+    baselines.
+25. **Residual variance floor in the calibrated estimator.** Each stratum's residual
+    variance is floored at its coarse stratum's pooled labeled residual variance, the
+    analogue of the label-only floor (audit finding 1). Coverage on the real design not yet
+    measured.
