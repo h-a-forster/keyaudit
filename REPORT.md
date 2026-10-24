@@ -16,7 +16,7 @@ section 14.
   - **1.48% [0.83%, 2.13%]** have a wrong key (narrow estimand).
   - **3.97% [2.68%, 5.25%]** have a wrong key, no correct option or several correct options
     (broad estimand).
-  - The excess is concentrated in two subjects: college chemistry, 17 of 62 labeled items,
+  - Two subjects stand out (narrow): college chemistry, 17 of 62 labeled items,
     27.4% [16.9%, 40.2%], and virology, 10 of 26, 38.5% [20.2%, 59.4%] (Holm p < 0.001 over
     56 subjects). High-school chemistry has 0 of 53, so chemistry as a whole is about 9.7%
     when its subjects are weighted by population size.
@@ -28,7 +28,12 @@ section 14.
 - The model-based bootstrap intervals in simulation-v1 are **not valid** (section 3.3). The
   bootstrap was changed after that run, and the coverage of the replacement has not been
   measured.
-- This build has **not** had an independent audit.
+- An independent audit (2026-10-24) found eight issues. Fixed after it: the label-only
+  interval under-covered (now variance-floored; the intervals above are the corrected ones),
+  chemistry is reframed as college chemistry, a duplicate-stem sensitivity is added, and two
+  wording/count errors are corrected. Still open: the calibrated estimator's small negative
+  bias in `tricks` (mixed cross-fitted and full-fit scores) and the unmeasured coverage of the
+  replacement item bootstrap (section 3.3); see AGENTS.md.
 
 ## 1. What was run
 
@@ -38,7 +43,7 @@ section 14.
 | Seed | 20261024 | 20261024 |
 | Units | fetch 1/195, labels 1/1; `build` stopped (exit 3) | 70/70 (40 scenario panels, 30 coverage panels) |
 | Wall time | 12.5 min on 1 worker (mostly about 3.5 s per denied request) | 38.6 min on 3 workers |
-| Code | keyaudit 0.1.0.dev0 (M5) | keyaudit 0.1.0.dev0 (M5) |
+| Code | keyaudit 0.1.0.dev0 (M5); labels stage recomputed from cached data after the audit | keyaudit 0.1.0.dev0 (M5) |
 
 `results/study-v1/provenance.json` records the data revisions (19 MMLU-Pro revisions,
 MMLU-Redux 2.0, Platinum and the leaderboard contents) and the library versions (numpy
@@ -264,9 +269,10 @@ interval that ignores the bias will under-cover even if the bootstrap itself is 
   weak.
 - **Untested on real data.** The leaderboard details adapter and the GPQA and BBH matrix
   construction have never read a real repository.
-- **No independent audit.** The same build process wrote and checked the statistics, the code
-  and this report. One bootstrap defect was found after the runs (section 3.3), and others
-  may remain.
+- **One independent audit, partly addressed.** The audit of 2026-10-24 checked the
+  label-only numbers, the joins and this report against `results/`. Its two model-estimator
+  findings (calibrated-estimator bias, item-bootstrap coverage) are not fixed, and the fixes
+  made after it have not been re-audited.
 
 ## 5. Reproducing
 

@@ -14,7 +14,10 @@ implemented and tested. The model-based study on the Open LLM Leaderboard has **
 run yet: every per-sample details repository is gated, and their conditions must be accepted
 on the Hugging Face Hub by the account whose token is used (see [Data access](#data-access)).
 What has been run is in [REPORT.md](REPORT.md): label-only estimates from MMLU-Redux 2.0
-and a simulation study of the method. This build has not yet had an independent audit.
+and a simulation study of the method. An independent audit (2026-10-24) found eight issues;
+the label-only interval (now variance-floored), the chemistry framing (now college chemistry
+and virology), the duplicate-stem sensitivity and two wording/count errors are fixed. Two
+low-severity issues in the model-based estimators remain open (see AGENTS.md).
 
 ## Why
 
@@ -101,7 +104,7 @@ needs no model panel:
 | Narrow: MMLU-Redux `wrong_groundtruth` | 56 | 1.48% | [0.83%, 2.13%] |
 | Broad: also no correct or multiple correct answers | 97 | 3.97% | [2.68%, 5.25%] |
 
-The excess is concentrated in two subjects: college chemistry (17 of 62 labeled keys wrong,
+Two subjects stand out: college chemistry (17 of 62 labeled keys wrong,
 27.4% [16.9%, 40.2%]) and virology (10 of 26, 38.5% [20.2%, 59.4%]), both Holm p < 0.001 over
 56 subjects. High-school chemistry has 0 of 53. No other subject differs.
 

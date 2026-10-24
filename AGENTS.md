@@ -93,14 +93,14 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24 (v0.1.0 build, unaudited).
+Updated: 2026-10-24 (v0.1.0 build; independent audit received, findings 1-4 and 7 fixed).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
   gated (auto-approval, per repository, no API to accept); MMLU-Pro key revisions
   fingerprinted (54 key-text changes since July 2024); Redux overlap with MMLU-Pro measured
-  (2,893 items, 56 narrow / 97 broad positives at revision 014c8cf5); Platinum counts; byte-range
-  projection through the Hub works.
+  (2,893 items, 56 narrow / 97 broad positives at revision 014c8cf5); Platinum counts;
+  byte-range projection through the Hub works.
 - `stats` (intervals, Holm/BH, Bayesian FDR, stratified difference estimator) and
   `study.config` with reference-value tests.
 
@@ -132,8 +132,8 @@ Done (M4):
 
 Done (M5 and v0.1.0, untagged):
 - Runner, report, simulation study and CLI. `results/study-v1/` (label-only: E_label narrow
-  1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%] after the audit's variance floor; 0/200 details repositories readable, so
-  no model stages ran) and `results/simulation-v1/` (70/70 units). REPORT.md is written from
+  1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%] after the audit's variance floor;
+  0/200 details repositories readable, so no model stages ran) and `results/simulation-v1/` (70/70 units). REPORT.md is written from
   these; README and CHANGELOG match it.
 - After the runs: the model-rate bootstrap became items-only with the panel fixed (DESIGN 14,
   deviation 20). The simulation-v1 coverage units predate this and used the pigeonhole
@@ -142,20 +142,37 @@ Done (M5 and v0.1.0, untagged):
 - Checks at v0.1.0: `uv run pytest` (fast suite) passes, `ruff check` and `ruff format
   --check` pass. `scripts/reference_values.py` runs (exit 0); `pytest --runslow` was not re-run.
 
-**This build has NOT had an independent audit.** The statistics, code, results and REPORT.md
-were written and checked by the same build process. Treat every number as unreviewed until
-an independent reviewer has checked it.
+Audit (independent, 2026-10-24; report kept outside the repository). Fixed after it, each in
+its own commit, from cached data only (no model calls):
+- Finding 1 (high): label-only intervals covered ~86% in a simulation of the actual design
+  (35 of 56 subject strata have no positive, zero variance). Each stratum's variance is now
+  floored at its category's pooled labeled variance (`stats.stratified_difference_estimate`
+  `var_floor`, `runner.label_variance_floor`); same simulation: ~98% narrow, ~95% broad.
+  `tests/test_label_coverage.py` is a seeded 200-replicate check on the real design counts
+  (`tests/data/label_design.json`). New: narrow 1.48% [0.83%, 2.13%], broad 3.97%
+  [2.68%, 5.25%] (point estimates unchanged).
+- Finding 2: chemistry is college chemistry (17/62; high school 0/53; weighted chemistry
+  9.7%). Per-subject Fisher tests (Holm over 56 subjects) and population-weighted category
+  rates added; virology (10/26) also stands out.
+- Finding 3: duplicate-stem sensitivity (one item per Redux row, >= 3 shared options): narrow
+  1.46%, broad 4.17% on 2,788 labeled; 4- vs 10-option caveat for the broad estimand.
+- Finding 4: 22 substantive maintainer key changes (qid 11783 is formatting only); the 10
+  Redux-`ok` corrected items are 6 distinct Redux rows. The generated `tables.md` still
+  counts 23 normalised-text changes.
+- Finding 7: labeled-item count 2,893 in AGENTS.md and DESIGN.
+- Finding 8 (info): 4 worker processes ran at once during the v1 runs; no effect on results.
+The fixes have not been re-audited.
 
 Remaining:
-1. Independent audit of the statistics (keymix EM, difference estimator, bootstrap, FDR),
-   the data joins (Redux matching, revision handling) and REPORT.md against
-   `results/`.
-2. Measure item-bootstrap coverage in a fresh run directory (the default profile takes about
-   30 min of coverage units on 3 workers). Decide whether the model-rate interval needs a
+1. Audit finding 5 (open): the calibrated estimator's bias of -0.30 [-0.57, -0.03] points in
+   `tricks` comes from mixing cross-fitted scores for labeled items with full-fit scores for
+   the population mean (`estimate.py`, calibrated estimate). Use one fixed score function.
+2. Audit finding 6 (open): REPORT 3.3 understates the old-bootstrap gap ("2-3x"; the median
+   upper limit was 24.3% against ~3% true). Measure item-bootstrap coverage in a fresh run
+   directory (the default profile takes about 30 min of coverage units on 3 workers). Decide whether the model-rate interval needs a
    bias correction (the estimator is about 1 point low on 1000 x 60 panels).
 3. Run `pytest --runslow` on the v0.1.0 code.
-4. A stratified test for the per-category comparison (the Fisher tests ignore subject
-   strata).
+4. Re-audit the post-audit fixes (findings 1-4, 7).
 5. Owner action: accept the gates for the repositories in `results/study-v1/access.csv` and
    provide a token, then run `scripts/probe_details.py`, the full study and the report, and
    update REPORT.md with model-based, calibrated and validation results.
