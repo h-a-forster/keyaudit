@@ -62,8 +62,8 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/simulate.py` | synthetic panels (planted mis-keys, trick items, families) | done (M3) |
 | `src/keyaudit/estimate.py` | pigeonhole bootstrap, calibration, transfer | done (M4) |
 | `src/keyaudit/validate.py` | AP, AUC, @k, operating point, baseline comparison, planted keys, LOFO | done (M4) |
-| `src/keyaudit/study/runner.py`, `report.py` | stages as units, derived results | M5 |
-| `src/keyaudit/cli.py` | `fetch / run / status / report / check-config / versions` | M0 partial, M5 |
+| `src/keyaudit/study/runner.py`, `report.py`, `simulation.py` | stages as units, derived results, simulation study | done (M5) |
+| `src/keyaudit/cli.py` | `fetch / run / status / report / check-config / simulate / versions` | done (M5) |
 | `configs/study.toml`, `configs/study_full.toml` | default (< 45 min) and full-size study | done |
 | `scripts/reference_values.py` | independent recomputation of DESIGN 7.1 | done |
 
@@ -93,7 +93,7 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24.
+Updated: 2026-10-24 (v0.1.0 build, unaudited).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -130,9 +130,36 @@ Done (M4):
   (AP/AUC with stratified bootstrap, precision/recall at k, FDR operating point, paired AP
   differences with Holm, planted keys, leave-one-family-out stability).
 
-Next:
-3. (M3, M4 done.) model and baselines with the synthetic and equivalence oracles.
-4. M4 estimation and validation; M5 runner, report, first real run, REPORT.md.
+Done (M5 and v0.1.0, untagged):
+- Runner, report, simulation study and CLI. `results/study-v1/` (label-only: E_label narrow
+  1.48% [0.95%, 2.01%], broad 3.97% [2.73%, 5.20%]; 0/200 details repositories readable, so
+  no model stages ran) and `results/simulation-v1/` (70/70 units). REPORT.md is written from
+  these; README and CHANGELOG match it.
+- After the runs: the model-rate bootstrap became items-only with the panel fixed (DESIGN 14,
+  deviation 20). The simulation-v1 coverage units predate this and used the pigeonhole
+  bootstrap; they are labelled as such and are not valid evidence (median interval 22
+  points wide, point estimate outside its own interval in 19/30 panels).
+- Checks at v0.1.0: `uv run pytest` (fast suite) passes, `ruff check` and `ruff format
+  --check` pass. `scripts/reference_values.py` runs (exit 0); `pytest --runslow` was not re-run.
+
+**This build has NOT had an independent audit.** The statistics, code, results and REPORT.md
+were written and checked by the same build process. Treat every number as unreviewed until
+an independent reviewer has checked it.
+
+Remaining:
+1. Independent audit of the statistics (keymix EM, difference estimator, bootstrap, FDR),
+   the data joins (Redux matching, revision handling) and REPORT.md against
+   `results/`.
+2. Measure item-bootstrap coverage in a fresh run directory (the default profile takes about
+   30 min of coverage units on 3 workers). Decide whether the model-rate interval needs a
+   bias correction (the estimator is about 1 point low on 1000 x 60 panels).
+3. Run `pytest --runslow` on the v0.1.0 code.
+4. A stratified test for the per-category comparison (the Fisher tests ignore subject
+   strata).
+5. Owner action: accept the gates for the repositories in `results/study-v1/access.csv` and
+   provide a token, then run `scripts/probe_details.py`, the full study and the report, and
+   update REPORT.md with model-based, calibrated and validation results.
+6. Tag v0.1.0 and publish only after the audit and with the owner's go-ahead.
 
 Open questions for the owner:
 - Provide a token and accept gates for the ~100-150 candidate repositories (list produced by
