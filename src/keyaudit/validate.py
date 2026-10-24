@@ -46,13 +46,20 @@ def average_precision(scores: ArrayLike, labels: ArrayLike) -> float:
 
 
 def precision_recall_at_k(scores: ArrayLike, labels: ArrayLike, k: int) -> tuple[float, float]:
-    """Precision and recall of the top ``k`` items by score."""
+    """Expected precision and recall of the top ``k`` items by score.
+
+    Items tied with the k-th score are taken in random order: the tie group straddling the
+    cut contributes its positive share times the number of its items that fit, so the value
+    does not depend on the order of tied items.
+    """
     s = np.asarray(scores, dtype=float)
     y = np.asarray(labels, dtype=bool)
     if not 0 < k <= s.size:
         raise ValueError(f"k must be in 1..{s.size}")
-    top = np.argsort(-s, kind="stable")[:k]
-    tp = int(y[top].sum())
+    kth = np.sort(s)[::-1][k - 1]
+    above = s > kth
+    tied = s == kth
+    tp = float(y[above].sum()) + (k - int(above.sum())) * float(y[tied].mean())
     return tp / k, (tp / int(y.sum()) if y.any() else float("nan"))
 
 
@@ -144,16 +151,27 @@ def compare_to_baselines(
 
 
 def operating_point(
-    s: ArrayLike, labels: ArrayLike, alpha: float = 0.10, conf: float = 0.95
+    s: ArrayLike,
+    labels: ArrayLike,
+    alpha: float = 0.10,
+    conf: float = 0.95,
+    selected: ArrayLike | None = None,
 ) -> dict[str, Any]:
     """Precision and recall of the items selected at Bayesian FDR q <= alpha.
 
-    q-values are computed on the evaluated items (``1 - s`` as posterior null probability).
+    ``selected`` gives the flags to evaluate (the study passes the flags computed from
+    q-values over the whole matrix, restricted to the labeled items, so validation uses the
+    same flag set as the suspect list). Without it, q-values are computed on the evaluated
+    items (``1 - s`` as posterior null probability).
     """
     sv = np.asarray(s, dtype=float)
     y = np.asarray(labels, dtype=bool)
-    q = stats.bayes_fdr_qvalues(1.0 - sv)
-    sel = q <= alpha
+    if selected is None:
+        sel = stats.bayes_fdr_qvalues(1.0 - sv) <= alpha
+    else:
+        sel = np.asarray(selected, dtype=bool)
+        if sel.shape != sv.shape:
+            raise ValueError("selected must have the same shape as s")
     tp, n_sel, n_pos = int((sel & y).sum()), int(sel.sum()), int(y.sum())
     out: dict[str, Any] = {"n_selected": n_sel, "tp": tp, "n_positive": n_pos}
     out["precision"] = tp / n_sel if n_sel else float("nan")
@@ -191,7 +209,7 @@ def ranking_summary(
         if k > s.size:
             continue
         p, r = precision_recall_at_k(s, y, k)
-        tp = round(p * k)
+        tp = round(p * k)  # expected hits rounded for the Clopper-Pearson interval
         out["at_k"][str(k)] = {
             "precision": p,
             "precision_ci": stats.clopper_pearson(tp, k, conf),

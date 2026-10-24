@@ -769,7 +769,9 @@ def _mmlu_pro_validation(
             continue
         seed = unit_seed(cfg.study.seed, f"{uid}/{tier}")
         res = validate.ranking_summary(s[sel], y, 2000, seed, conf=u.conf)
-        res["operating_point"] = validate.operating_point(s[sel], y, u.fdr_alpha, u.conf)
+        res["operating_point"] = validate.operating_point(
+            s[sel], y, u.fdr_alpha, u.conf, selected=flagged[sel]
+        )
         base = {n: np.asarray(fa[f"baseline_{n}"])[sel] for n in BASELINES}
         res["baselines"] = {n: validate.ranking_summary(v, y, 500, seed) for n, v in base.items()}
         res["vs_baselines"] = validate.compare_to_baselines(s[sel], base, y, 2000, seed, u.conf)

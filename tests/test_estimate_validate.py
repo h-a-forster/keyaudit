@@ -318,3 +318,10 @@ def test_residual_variance_floor_uses_coarse_stratum() -> None:
     assert fl["a"] == pytest.approx(x.var(ddof=1)) and fl["b"] == fl["a"]
     assert fl["c"] == 0.0  # category Y residuals are all zero
     assert fl["m"] == pytest.approx(e[lab].var(ddof=1))  # spans X and Y: all labeled
+
+
+def test_operating_point_uses_given_flags() -> None:
+    s = np.array([0.99, 0.98, 0.2, 0.1])
+    y = np.array([True, False, True, False])
+    op = validate.operating_point(s, y, selected=np.array([True, False, True, False]))
+    assert op["n_selected"] == 2 and op["tp"] == 2 and op["recall"] == 1.0

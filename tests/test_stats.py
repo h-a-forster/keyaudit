@@ -110,3 +110,13 @@ def test_average_precision_ties_are_order_free() -> None:
     # threshold 0.5: precision 1/4, recall gain 1/2; threshold 0.1: precision 2/5, gain 1/2
     assert average_precision(s, y1) == pytest.approx(0.5 * 0.25 + 0.5 * 0.4)
     assert average_precision(s, y1) == average_precision(s, y2)
+
+
+def test_precision_at_k_ties_expected() -> None:
+    # 4 items tied at the top (1 positive), k = 2: expected hits 2 * 1/4
+    s = np.array([1.0, 1.0, 1.0, 1.0, 0.2])
+    y = np.array([False, True, False, False, True])
+    p, r = precision_recall_at_k(s, y, 2)
+    assert p == pytest.approx(0.25) and r == pytest.approx(0.25)
+    assert precision_recall_at_k(s, y[[1, 0, 2, 3, 4]], 2) == (p, r)
+    assert precision_recall_at_k(s, y, 5) == (pytest.approx(0.4), pytest.approx(1.0))

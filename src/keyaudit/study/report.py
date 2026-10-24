@@ -180,6 +180,40 @@ def _labels_section(lab: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _subset_flag_rate(
+    s: np.ndarray, region: np.ndarray, subset: np.ndarray, group: np.ndarray, seed: int,
+    conf: float, n_boot: int = 2000,
+) -> dict[str, Any]:  # fmt: skip
+    """Model-only flag rate (mean posterior) on a subset of items, for comparison with a
+    label-based rate on the same items. Intervals: item bootstrap within groups with the fit
+    held fixed (no refit, so narrower than the refitted bootstrap); the all-items interval is
+    region-bounded from the in-region one."""
+    from keyaudit import estimate
+
+    idx = np.flatnonzero(subset)
+    rng = np.random.default_rng([seed, 23])
+    strata = [idx[group[idx] == g] for g in np.unique(group[idx])]
+    reg_vals, all_vals = np.empty(n_boot), np.empty(n_boot)
+    for b in range(n_boot):
+        pick = np.concatenate([st[rng.integers(0, st.size, st.size)] for st in strata])
+        all_vals[b] = s[pick].mean()
+        r = pick[region[pick]]
+        reg_vals[b] = s[r].mean() if r.size else np.nan
+    share = float(region[idx].mean())
+    reg_ci = estimate.percentile_interval(reg_vals, conf)
+    return {
+        "estimand": "model-only flag rate (mean posterior), not a key-error rate",
+        "n_items": int(idx.size),
+        "overall": float(s[idx].mean()),
+        "overall_ci_fixed_fit": estimate.percentile_interval(all_vals, conf),
+        "region_share": share,
+        "region_rate": float(s[idx][region[idx]].mean()),
+        "region_ci_fixed_fit": reg_ci,
+        "overall_bounded_ci": estimate.region_bounded_interval(reg_ci, share),
+        "n_boot": n_boot,
+    }
+
+
 def _model_results(
     cfg: StudyConfig, store: UnitStore, out: Path, lab_arrays: dict[str, Any] | None
 ) -> list[str]:
@@ -237,6 +271,11 @@ def _model_results(
                 for g, v in fmeta["eps"].items()
             },
         }  # fmt: skip
+        if b == "mmlu_pro" and "src" in ba:
+            est["mmlu_derived_model_only"] = _subset_flag_rate(
+                s, region, np.char.startswith(np.asarray(ba["src"]).astype(str), "ori_mmlu"),
+                m.group, cfg.study.seed, conf,
+            )  # fmt: skip
         if b == "mmlu_pro" and lab_arrays is not None and "src" in ba:
             src = np.asarray(ba["src"]).astype(str)
             pos = {int(qq): k for k, qq in enumerate(lab_arrays["redux_qid"])}
