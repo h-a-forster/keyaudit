@@ -13,8 +13,8 @@ section 14.
   at least 60 models. So there is no model-based key-error rate for any real benchmark yet.
 - Label-only estimates for the 6,810 MMLU-derived MMLU-Pro test items, from the MMLU-Redux
   2.0 relabels:
-  - **1.48% [0.95%, 2.01%]** have a wrong key (narrow estimand).
-  - **3.97% [2.73%, 5.20%]** have a wrong key, no correct option or several correct options
+  - **1.48% [0.83%, 2.13%]** have a wrong key (narrow estimand).
+  - **3.97% [2.68%, 5.25%]** have a wrong key, no correct option or several correct options
     (broad estimand).
   - Chemistry stands out: 17 of 115 labeled items, 14.8% [8.9%, 22.6%], Holm p < 0.001.
 - On synthetic panels the model ranks planted mis-keys well when its assumptions hold: AP
@@ -77,10 +77,20 @@ difference estimator with no model predictions, f = 0). Redux sampled items per 
 each subject is weighted by its share of the population. This is why the stratified and raw
 rates differ.
 
+**Variance floor (changed after the audit).** With about 1.5% positives, 35 of the 56 subject
+strata have no labeled positive and an estimated variance of zero. In a simulation of the
+actual design (real per-subject population and labeled counts, true rates = observed subject
+rates shrunk toward the overall rate) the original interval, 1.48% [0.95%, 2.01%], covered
+only about 86% for the narrow estimand (93% for broad). Each stratum's variance is now floored
+at the pooled labeled variance of its category; the point estimates are unchanged and the
+same simulation gives about 98% coverage for narrow and 95% for broad (600-1,000 replicates;
+the floored narrow interval is conservative). `tests/test_label_coverage.py` reruns a seeded
+200-replicate version of this check (plain about 82%, floored about 98%).
+
 | Estimand | Positives / labeled | Stratified estimate (95% CI) | Raw labeled rate (CP 95%) |
 |---|---|---|---|
-| `E_label` narrow (Redux `wrong_groundtruth`) | 56 / 2,893 | 1.48% [0.95%, 2.01%] | 1.94% [1.47%, 2.51%] |
-| `E_label` broad (adds no correct and multiple correct answers) | 97 / 2,893 | 3.97% [2.73%, 5.20%] | 3.35% [2.73%, 4.08%] |
+| `E_label` narrow (Redux `wrong_groundtruth`) | 56 / 2,893 | 1.48% [0.83%, 2.13%] | 1.94% [1.47%, 2.51%] |
+| `E_label` broad (adds no correct and multiple correct answers) | 97 / 2,893 | 3.97% [2.68%, 5.25%] | 3.35% [2.73%, 4.08%] |
 
 At the latest revision (`24ac2da5`, 2,883 labeled) the estimates agree to two decimals.
 

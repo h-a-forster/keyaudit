@@ -208,11 +208,29 @@ def _bytes_fetched(store: UnitStore) -> int:
 # ---------------------------------------------------------------------------------------------
 
 
+def label_variance_floor(
+    y: np.ndarray, labeled: np.ndarray, strata: np.ndarray, category: np.ndarray
+) -> dict[str, float]:
+    """Per-stratum variance floor: the pooled labeled Bernoulli variance of the stratum's
+    category (of all labeled items for a stratum spanning several categories)."""
+    out: dict[str, float] = {}
+    for s in np.unique(strata):
+        cats = np.unique(category[strata == s])
+        sel = labeled & np.isin(category, cats) if cats.size == 1 else labeled
+        p = float(y[sel].mean()) if sel.any() else 0.0
+        out[str(s)] = p * (1.0 - p)
+    return out
+
+
 def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str, Any]:
     """Classical stratified error rates of the MMLU-derived items from the Redux sample.
 
     Population: MMLU-Pro items with ``src`` starting ``ori_mmlu``; labeled: the joined Redux
-    items. Strata: subjects, collapsed into categories below 10 labeled items. Per-category
+    items. Strata: subjects, collapsed into categories below 10 labeled items. Each stratum's
+    variance is floored at the pooled labeled variance p_c (1 - p_c) of its category (overall
+    for ``_other``): with ~1.5% positives most subject strata have no positives and zero
+    estimated variance, and without the floor the nominal 95% interval covered ~86% in a
+    simulation of this design (``tests/test_label_coverage.py``). Per-category
     rates with Clopper-Pearson intervals on the labeled counts and Holm-adjusted Fisher exact
     tests of each category against the rest.
     """
@@ -239,7 +257,10 @@ def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str
             j = pos.get(int(q))
             if j is not None:
                 y[k] = float(mask[j])
-        est = stats.stratified_difference_estimate(np.zeros(pop.size), labeled, y, strata, conf)
+        floor = label_variance_floor(y, labeled, strata, category)
+        est = stats.stratified_difference_estimate(
+            np.zeros(pop.size), labeled, y, strata, conf, var_floor=floor
+        )
         k_pos = int(y[labeled].sum())
         cats = {}
         pvals = []

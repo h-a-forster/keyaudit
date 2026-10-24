@@ -125,6 +125,7 @@ def stratified_difference_estimate(
     y: ArrayLike,
     strata: ArrayLike | None = None,
     conf: float = 0.95,
+    var_floor: dict[str, float] | None = None,
 ) -> DifferenceEstimate:
     """Population mean of ``y`` from predictions ``f`` on all items and labels on a sample.
 
@@ -138,6 +139,12 @@ def stratified_difference_estimate(
     ``sum_s (N_s / N)^2 var_s`` (the survey-sampling difference estimator; prediction-powered
     inference for a mean). ``f`` must not have been fitted on the labels it is evaluated on
     (use cross-fitting). The classical stratified estimate is the same formula with f = 0.
+
+    ``var_floor`` optionally maps a stratum name (``str(s)``) to a lower bound on its residual
+    variance ``S^2_{e,s}`` (applied to the classical variance too). With rare binary outcomes
+    many strata have no positives and an estimated variance of zero, which makes the interval
+    too narrow; flooring each stratum at a pooled (e.g. category-level) variance restores
+    coverage (see ``label_estimates`` and its coverage test).
 
     Raises ``ValueError`` when a stratum has fewer than two labeled items: collapse strata
     before calling.
@@ -168,9 +175,10 @@ def stratified_difference_estimate(
         fpc = 1.0 - n / big_n
         e = ya[ml] - fa[ml]
         th = float(fa[m].mean() + e.mean())
-        v = fpc * float(e.var(ddof=1)) / n
+        floor = 0.0 if var_floor is None else float(var_floor.get(str(s), 0.0))
+        v = fpc * max(float(e.var(ddof=1)), floor) / n
         c_th = float(ya[ml].mean())
-        c_v = fpc * float(ya[ml].var(ddof=1)) / n
+        c_v = fpc * max(float(ya[ml].var(ddof=1)), floor) / n
         w = big_n / n_pop
         est += w * th
         var += w * w * v

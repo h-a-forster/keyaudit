@@ -14,8 +14,8 @@ Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2893; 56 
 
 | Estimand | Positives | Stratified estimate | 95% CI | Raw labeled rate (CP 95%) |
 |---|---|---|---|---|
-| E_label narrow | 56 | 1.48% | [0.95%, 2.01%] | 1.94% [1.47%, 2.51%] |
-| E_label broad | 97 | 3.97% | [2.73%, 5.20%] | 3.35% [2.73%, 4.08%] |
+| E_label narrow | 56 | 1.48% | [0.83%, 2.13%] | 1.94% [1.47%, 2.51%] |
+| E_label broad | 97 | 3.97% | [2.68%, 5.25%] | 3.35% [2.73%, 4.08%] |
 
 ### MMLU-Pro `ori_mmlu` items at revision `24ac2da5` (latest)
 
@@ -23,8 +23,8 @@ Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2883; 56 
 
 | Estimand | Positives | Stratified estimate | 95% CI | Raw labeled rate (CP 95%) |
 |---|---|---|---|---|
-| E_label narrow | 56 | 1.48% | [0.95%, 2.01%] | 1.94% [1.47%, 2.52%] |
-| E_label broad | 97 | 3.97% | [2.73%, 5.20%] | 3.36% [2.74%, 4.09%] |
+| E_label narrow | 56 | 1.48% | [0.83%, 2.13%] | 1.94% [1.47%, 2.52%] |
+| E_label broad | 97 | 3.97% | [2.68%, 5.25%] | 3.36% [2.74%, 4.09%] |
 
 Per category (narrow, canonical revision; Fisher exact test against all other categories, Holm-adjusted over categories):
 

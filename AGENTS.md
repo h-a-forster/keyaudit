@@ -132,7 +132,7 @@ Done (M4):
 
 Done (M5 and v0.1.0, untagged):
 - Runner, report, simulation study and CLI. `results/study-v1/` (label-only: E_label narrow
-  1.48% [0.95%, 2.01%], broad 3.97% [2.73%, 5.20%]; 0/200 details repositories readable, so
+  1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%] after the audit's variance floor; 0/200 details repositories readable, so
   no model stages ran) and `results/simulation-v1/` (70/70 units). REPORT.md is written from
   these; README and CHANGELOG match it.
 - After the runs: the model-rate bootstrap became items-only with the panel fixed (DESIGN 14,

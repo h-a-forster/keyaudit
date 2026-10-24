@@ -53,17 +53,22 @@
   },
   "unit_cpu_seconds_by_stage": {
     "fetch": 27.5,
-    "labels": 38.8
+    "labels": 11.7
   },
   "starts": [
     {
       "time": "2026-10-23T23:41:20+00:00",
       "package_version": "0.1.0.dev0",
       "git_sha": "22d3a69a30933b3996ea3bdc46132464a824126b"
+    },
+    {
+      "time": "2026-10-24T03:12:47+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "c2d9dad1f35b73c1fb05185ba6d7d33013660af3"
     }
   ],
   "library_versions": {
-    "keyaudit": "0.1.0.dev0",
+    "keyaudit": "0.1.0",
     "numpy": "2.4.6",
     "scipy": "1.18.1",
     "pyarrow": "26.0.0",

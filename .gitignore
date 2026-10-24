@@ -15,7 +15,7 @@ tmp/
 # Downloaded data, caches and run directories (never committed; small derived results go in
 # results/). Leaderboard per-sample details have no stated licence and must not be
 # redistributed; GPQA question text must never appear in plain text in this repository.
-data/
+/data/
 cache/
 runs/
 *.npz
