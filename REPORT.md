@@ -112,9 +112,13 @@ is also tested against all other labeled items, Holm-adjusted over 56 subjects
 - No other subject or category differs after adjustment. Category rates range from 0.0%
   (business, 0 / 104) to 2.9% (health, 11 / 385).
 
-**Maintainer corrections.** After the canonical revision the MMLU-Pro maintainers changed 23
-keys (21 from `ori_mmlu`, 2 from `stemez`). Redux had labeled 10 of these items `ok` and had
-not labeled the other 13. None of the 56 Redux `wrong_groundtruth` items has been corrected.
+**Maintainer corrections.** After the canonical revision the normalised key text of 23
+MMLU-Pro items changed (21 from `ori_mmlu`, 2 from `stemez`). One of these (question 11783,
+`stemez`, unlabeled) is a formatting fix only (escape characters replaced by `||` and `at`),
+so there are **22 substantive key changes** (21 `ori_mmlu`, 1 `stemez`). Redux had labeled 10
+of the changed items `ok`; these 10 MMLU-Pro items come from only **6 distinct Redux rows**
+(MMLU-Pro has near-duplicate items that join to the same Redux question). The other 13
+changed items had no Redux label. None of the 56 Redux `wrong_groundtruth` items has been corrected.
 The two efforts may have found different errors, or they may define a key error differently.
 These counts alone cannot tell which.
 
@@ -238,8 +242,8 @@ interval that ignores the bias will under-cover even if the bootstrap itself is 
   competence-region shares and rates do not carry over to stronger panels. No panel was
   drawn in this run.
 - **Human labels are not ground truth.**
-  - The MMLU-Pro maintainers' 23 later corrections include 10 items that Redux labeled `ok`,
-    and they corrected none of Redux's 56 `wrong_groundtruth` items.
+  - The MMLU-Pro maintainers' 22 later key changes include 10 items (6 distinct Redux
+    questions) that Redux labeled `ok`, and they corrected none of Redux's 56 `wrong_groundtruth` items.
   - The broad estimand is about 2.7 times the narrow one, so the "key error rate" depends on
     the definition used.
   - The Redux overlap covers only the MMLU-derived 57% of MMLU-Pro. The other 43% (STEM
