@@ -97,6 +97,16 @@ the floored narrow interval is conservative). `tests/test_label_coverage.py` rer
 
 At the latest revision (`24ac2da5`, 2,883 labeled) the estimates agree to two decimals.
 
+**Duplicate stems (sensitivity, added after the audit).** MMLU-Pro contains near-duplicate
+items: 140 labeled items join only 70 Redux questions, and some labeled items share at most 2
+of the Redux question's 4 options, so the Redux label may describe a different item. Keeping
+one labeled item per Redux question and requiring at least 3 shared options leaves 2,788
+labeled items and gives narrow 1.46% [0.78%, 2.14%] and broad 4.17% [2.73%, 5.60%]
+(`results/study-v1/tables.md`). The headline estimates do not depend on the duplicates. Note
+also that the labels judge MMLU's 4-option version of each question while MMLU-Pro items have
+up to 10 options; the broad estimand ("no correct option", "several correct options") may not
+carry over to the 10-option item.
+
 **By category and subject** (narrow estimand, canonical revision). Each category is tested
 against all others with a Fisher exact test, Holm-adjusted over 14 categories. Category is a
 function of subject, so a category test cannot be stratified by subject; instead each subject

@@ -123,6 +123,18 @@ def _labels_section(lab: dict[str, Any]) -> list[str]:
                 f"{_fmt_ci(t['ci'])} | {100 * t['raw_rate']:.2f}% {_fmt_ci(t['raw_ci'])} |"
             )
         lines.append("")
+        dd = {t: e[t].get("dedup_sensitivity") for t in ("narrow", "broad")}
+        if all(dd.values()):
+            lines += [
+                "Sensitivity, one labeled item per Redux question and at least 3 shared options: "
+                + "; ".join(
+                    f"{t} {dd[t]['positives']} / {dd[t]['labeled']}, "
+                    f"{100 * dd[t]['estimate']:.2f}% {_fmt_ci(dd[t]['ci'])}"
+                    for t in ("narrow", "broad")
+                )
+                + ".",
+                "",
+            ]
     e = lab["label_estimates"]["canonical"]["narrow"]["per_category"]
     lines += [
         "Per category (narrow, canonical revision; Fisher exact test against all other "

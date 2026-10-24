@@ -17,6 +17,8 @@ Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2893; 56 
 | E_label narrow | 56 | 1.48% | [0.83%, 2.13%] | 1.94% [1.47%, 2.51%] |
 | E_label broad | 97 | 3.97% | [2.68%, 5.25%] | 3.35% [2.73%, 4.08%] |
 
+Sensitivity, one labeled item per Redux question and at least 3 shared options: narrow 52 / 2788, 1.46% [0.78%, 2.14%]; broad 92 / 2788, 4.17% [2.73%, 5.60%].
+
 ### MMLU-Pro `ori_mmlu` items at revision `24ac2da5` (latest)
 
 Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2883; 56 strata.
@@ -25,6 +27,8 @@ Population 6810 items; labeled (MMLU-Redux 2.0 overlap, same key text) 2883; 56 
 |---|---|---|---|---|
 | E_label narrow | 56 | 1.48% | [0.83%, 2.13%] | 1.94% [1.47%, 2.52%] |
 | E_label broad | 97 | 3.97% | [2.68%, 5.25%] | 3.36% [2.74%, 4.09%] |
+
+Sensitivity, one labeled item per Redux question and at least 3 shared options: narrow 52 / 2782, 1.47% [0.79%, 2.16%]; broad 92 / 2782, 4.18% [2.74%, 5.61%].
 
 Per category (narrow, canonical revision; Fisher exact test against all other categories, Holm-adjusted over categories; the weighted rate weights each subject by its population size):
 

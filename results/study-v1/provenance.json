@@ -53,7 +53,7 @@
   },
   "unit_cpu_seconds_by_stage": {
     "fetch": 27.5,
-    "labels": 11.4
+    "labels": 11.6
   },
   "starts": [
     {
@@ -70,6 +70,11 @@
       "time": "2026-10-24T03:15:51+00:00",
       "package_version": "0.1.0",
       "git_sha": "17be0d8fd6e5e5ccf64f885fdfd73a6dc272a09e"
+    },
+    {
+      "time": "2026-10-24T03:18:56+00:00",
+      "package_version": "0.1.0",
+      "git_sha": "1cffe08b3cdd4858c8af655d24c04ed4335cbe83"
     }
   ],
   "library_versions": {

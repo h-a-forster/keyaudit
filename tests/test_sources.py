@@ -128,6 +128,28 @@ def test_join_redux() -> None:
     assert j.counts["ambiguous_dropped"] == 1
     assert j.counts["narrow_positives"] == 1 and j.counts["broad_positives"] == 1
     assert j.narrow().tolist() == [False, True]
+    assert j.row_id.tolist() == [0, 1] and j.option_overlap.tolist() == [1, 1]
+
+
+def test_join_redux_duplicate_stems_share_row() -> None:
+    # audit finding 3: two MMLU-Pro items with the same stem join one Redux row
+    base = _table("r", [0, 0], [["alpha", "beta", "gamma", "delta"], ["alpha", "b", "c", "d"]])
+    table = ItemTable(
+        base.revision,
+        base.question_id,
+        ("Question 0?", "question 0?"),
+        base.options,
+        base.answer_index,
+        base.category,
+        base.src,
+    )
+    row = labels.ReduxRow(
+        "high_school_mathematics", "Question 0?", ("alpha", "beta", "gamma", "delta"), 0, "ok"
+    )
+    j = labels.join_redux(table, [row])
+    assert j.question_id.tolist() == [100, 101]
+    assert j.row_id.tolist() == [0, 0]
+    assert j.option_overlap.tolist() == [4, 1]
 
 
 def test_label_tiers() -> None:

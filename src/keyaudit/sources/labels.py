@@ -100,6 +100,10 @@ class ReduxJoin:
     subject: NDArray[np.str_]
     counts: dict[str, int] = field(default_factory=dict)
     key_mismatch_ids: list[int] = field(default_factory=list)
+    # per labeled item: id of the Redux question it joined to (several MMLU-Pro items can join
+    # the same Redux row) and how many of the Redux row's options appear among its options
+    row_id: NDArray[np.int64] | None = None
+    option_overlap: NDArray[np.int64] | None = None
 
     def narrow(self) -> NDArray[np.bool_]:
         return np.isin(self.error_type, sorted(NARROW))
@@ -119,7 +123,8 @@ def join_redux(mmlu_pro: ItemTable, redux: list[ReduxRow]) -> ReduxJoin:
     by_key: dict[tuple[str, str], list[ReduxRow]] = defaultdict(list)
     for r in redux:
         by_key[(r.subject, normalise_text(r.question))].append(r)
-    ids, errs, subs, mismatch = [], [], [], []
+    ids, errs, subs, mismatch, rows, overlap = [], [], [], [], [], []
+    row_ids: dict[tuple[str, str], int] = {}
     matched = ambiguous = 0
     seen: set[int] = set()
     for i, src in enumerate(mmlu_pro.src):
@@ -144,6 +149,10 @@ def join_redux(mmlu_pro: ItemTable, redux: list[ReduxRow]) -> ReduxJoin:
         ids.append(qid)
         errs.append(row.error_type)
         subs.append(subject)
+        rk = (subject, normalise_text(mmlu_pro.question[i]))
+        rows.append(row_ids.setdefault(rk, len(row_ids)))
+        own = {normalise_text(o) for o in mmlu_pro.options[i]}
+        overlap.append(sum(normalise_text(c) in own for c in row.choices))
     et = np.asarray(errs, dtype=str)
     counts = {
         "redux_rows": len(redux),
@@ -162,6 +171,8 @@ def join_redux(mmlu_pro: ItemTable, redux: list[ReduxRow]) -> ReduxJoin:
         subject=np.asarray(subs, dtype=str),
         counts=counts,
         key_mismatch_ids=mismatch,
+        row_id=np.asarray(rows, dtype=np.int64),
+        option_overlap=np.asarray(overlap, dtype=np.int64),
     )
 
 

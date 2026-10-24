@@ -323,7 +323,37 @@ def label_estimates(table: Any, redux_join: Any, conf: float = 0.95) -> dict[str
             }
         for sname, padj in zip(sorted(subs), stats.holm(spv), strict=True):
             subs[sname]["p_holm"] = float(padj)
+        dedup = None
+        if redux_join.row_id is not None and len(redux_join.row_id) == len(redux_join.question_id):
+            # sensitivity (audit finding 3): one labeled item per Redux row, and only items
+            # sharing at least 3 of the Redux row's 4 options; dropped items count as unlabeled
+            keep_q = set()
+            seen_rows: set[int] = set()
+            for q, r, ov in zip(
+                redux_join.question_id, redux_join.row_id, redux_join.option_overlap, strict=True
+            ):
+                if int(r) not in seen_rows and int(ov) >= 3:
+                    seen_rows.add(int(r))
+                    keep_q.add(int(q))
+            lab_d = labeled & np.asarray([int(q) in keep_q for q in qid])
+            if lab_d.sum() >= 2:
+                st_d = collapse_strata(subject, category, lab_d)
+                e_d = stats.stratified_difference_estimate(
+                    np.zeros(pop.size),
+                    lab_d,
+                    y,
+                    st_d,
+                    conf,
+                    var_floor=label_variance_floor(y, lab_d, st_d, category),
+                )
+                dedup = {
+                    "labeled": int(lab_d.sum()),
+                    "positives": int(y[lab_d].sum()),
+                    "estimate": e_d.estimate,
+                    "ci": e_d.ci,
+                }
         out[tier] = {
+            "dedup_sensitivity": dedup,
             "estimate": est.estimate,
             "se": est.se,
             "ci": est.ci,
