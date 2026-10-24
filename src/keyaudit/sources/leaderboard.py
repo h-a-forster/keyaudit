@@ -68,6 +68,10 @@ class TaskSpec:
     doc_fields: tuple[str, ...]  # doc sub-fields read from the parquet
 
 
+# GPQA details store the run's shuffled options as doc.choice1..choice4 (the harness shuffles
+# per run, so position keys differ between runs; options are matched by text hash).
+GPQA_CHOICE_FIELDS = ("choice1", "choice2", "choice3", "choice4")
+
 SPECS: dict[str, TaskSpec] = {
     "mmlu_pro": TaskSpec(
         "mmlu_pro",
@@ -313,7 +317,9 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
     (index), ``response`` (argmax index), ``loglik`` float32 ``[n, K]`` NaN padded,
     ``n_options``, ``harness_correct`` (int8, ``-1`` where absent), and for MMLU-Pro
     ``opt_hash`` (text hashes of the doc's options) and ``answer_index`` (the doc's own
-    index, which can disagree with the scored ``target`` letter).
+    index, which can disagree with the scored ``target`` letter). GPQA rows that carry the
+    run's options (``doc.choice1``..``choice4``) also get ``opt_hash`` (text hashes in the
+    run's shuffled order; the text itself is not kept).
     """
     n = len(rows)
     k_max = MAX_OPTIONS if spec.benchmark == "mmlu_pro" else len(spec.choices)
@@ -326,6 +332,7 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
     opt_hash = np.zeros((n, k_max), dtype=np.int64)
     ans_idx = np.full(n, -1, dtype=np.int64)
     harness = np.full(n, -1, dtype=np.int8)
+    has_gpqa_hash = False
     # lm-evaluation-harness acc_norm: log-likelihood divided by len(choice) in characters
     lengths = np.array([len(c) for c in spec.choices], dtype=float)
     for r, row in enumerate(rows):
@@ -343,6 +350,12 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
         elif spec.benchmark == "gpqa":
             item_id[r] = stable_id(str(doc["Record ID"]))
             n_opt[r] = len(spec.choices)
+            if all(doc.get(f) is not None for f in GPQA_CHOICE_FIELDS):
+                # the run's shuffled option order, as text hashes only (no GPQA text kept)
+                opt_hash[r, : len(GPQA_CHOICE_FIELDS)] = [
+                    text_hash(str(doc[f])) for f in GPQA_CHOICE_FIELDS
+                ]
+                has_gpqa_hash = True
         else:
             item_id[r] = stable_id(str(doc["input"]))
             n_opt[r] = len(spec.choices)
@@ -372,6 +385,10 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
     if spec.benchmark == "mmlu_pro":
         out["opt_hash"] = opt_hash
         out["answer_index"] = ans_idx
+    if has_gpqa_hash:
+        if np.any(opt_hash == 0):
+            raise ValueError(f"{spec.task}: option text present on some rows only")
+        out["opt_hash"] = opt_hash
     return out
 
 
@@ -458,7 +475,9 @@ def fetch_responses(
     commit = hub.resolve_revision(model.details_repo, "refs/convert/parquet", token=token)
     doc_cols = [f"doc.{f}" for f in spec.doc_fields]
     if benchmark == "gpqa":
-        doc_cols = ["doc.Record ID"]
+        # Option order is shuffled per run: read the run's options to hash them (the text is
+        # never stored; parse_samples keeps 32-bit hashes only).
+        doc_cols = ["doc.Record ID", *(f"doc.{f}" for f in GPQA_CHOICE_FIELDS)]
     columns = ["doc_id", "target", "filtered_resps", spec.metric, *doc_cols]
     tables = []
     stats = {"bytes_fetched": 0, "requests": 0, "remote_size": 0}

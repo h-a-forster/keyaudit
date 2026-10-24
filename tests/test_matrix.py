@@ -9,6 +9,7 @@ from keyaudit.matrix import (
     ResponseMatrix,
     agreement_matrix,
     build_matrix,
+    canonical_options,
     dedupe_models,
     model_families,
 )
@@ -133,3 +134,48 @@ def test_build_matrix_without_hashes() -> None:
         np.array(["g"] * 3), units,
     )  # fmt: skip
     assert m.responses[:, 0].tolist() == [0, 1, -1]
+
+
+def _shuffled_unit(order: dict[int, list[int]], key_text: dict[int, int], pick: dict[int, int]):
+    """A synthetic GPQA-like run: per item the option hashes in this run's order, the key
+    index of the keyed text in that order and the response index of the picked text."""
+    ids = sorted(order)
+    oh = np.asarray([order[q] for q in ids], dtype=np.int64)
+    key = np.asarray([order[q].index(key_text[q]) for q in ids])
+    resp = np.asarray([order[q].index(pick[q]) for q in ids])
+    return {"item_id": np.asarray(ids, dtype=np.int64), "key": key, "response": resp,
+            "opt_hash": oh}  # fmt: skip
+
+
+def test_canonical_options_maps_shuffled_runs() -> None:
+    # item 1: options 40,10,30,20 (key text 30); two runs show them in different orders and
+    # both pick text 30 (correct); a third picks text 10. Position keys disagree across runs.
+    keyed = {1: 30, 2: 7}
+    u1 = _shuffled_unit({1: [40, 10, 30, 20], 2: [5, 6, 7, 8]}, keyed, {1: 30, 2: 7})
+    u2 = _shuffled_unit({1: [30, 20, 10, 40], 2: [8, 7, 6, 5]}, keyed, {1: 30, 2: 5})
+    u3 = _shuffled_unit({1: [20, 40, 10, 30], 2: [6, 5, 8, 7]}, keyed, {1: 10, 2: 7})
+    assert u1["key"][0] != u2["key"][0]
+    units = [("a", u1), ("b", u2), ("c", u3)]
+    can = canonical_options(units)
+    assert can.item_id.tolist() == [1, 2]
+    assert can.opt_hash.tolist() == [[10, 20, 30, 40], [5, 6, 7, 8]]
+    assert can.key.tolist() == [2, 2] and sum(can.dropped.values()) == 0
+    m, rep = build_matrix("gpqa", can.item_id, can.opt_hash, can.key, can.n_options,
+                          np.full(2, "gpqa"), units)  # fmt: skip
+    assert rep.dropped_items_unmapped == 0
+    # canonical index of the picked text: 30 -> 2, 10 -> 0; 7 -> 2, 5 -> 0
+    assert m.responses.tolist() == [[2, 2, 0], [2, 0, 2]]
+    # correctness is invariant to the shuffle: same as each run's own position scoring
+    per_run = np.asarray([u["response"] == u["key"] for _, u in units]).T
+    assert np.array_equal(m.correct() == 1, per_run)
+
+
+def test_canonical_options_drops_inconsistent_items() -> None:
+    a = _shuffled_unit({1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [9, 9, 10, 11]},
+                       {1: 1, 2: 5, 3: 9}, {1: 1, 2: 5, 3: 9})  # fmt: skip
+    b = _shuffled_unit({1: [4, 3, 2, 1], 2: [5, 6, 7, 99], 3: [9, 9, 10, 11]},
+                       {1: 2, 2: 5, 3: 9}, {1: 2, 2: 5, 3: 9})  # fmt: skip
+    can = canonical_options([("a", a), ("b", b)])
+    assert can.item_id.size == 0
+    assert can.dropped == {"duplicate_options": 1, "inconsistent_options": 1,
+                           "inconsistent_key": 1}  # fmt: skip

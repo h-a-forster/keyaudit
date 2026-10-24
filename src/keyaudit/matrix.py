@@ -241,3 +241,64 @@ def build_matrix(
         models=tuple(u[0] for u in units),
     )
     return m, rep
+
+
+@dataclass
+class CanonicalOptions:
+    """Canonical option order for a benchmark whose runs shuffle options (GPQA).
+
+    ``opt_hash[i]`` holds item i's option text hashes in ascending order (the canonical order),
+    ``key[i]`` the canonical index of the keyed option's text. Dropped item counts by reason.
+    """
+
+    item_id: NDArray[np.int64]
+    opt_hash: NDArray[np.int64]
+    key: NDArray[np.int64]
+    n_options: NDArray[np.int64]
+    dropped: dict[str, int] = field(default_factory=dict)
+
+
+def canonical_options(
+    units: Sequence[tuple[str, dict[str, NDArray[np.generic]]]],
+) -> CanonicalOptions:
+    """Canonical option order and key from runs that present options in different orders.
+
+    Each unit has ``item_id``, ``key`` (index in that run's order) and ``opt_hash`` (that
+    run's option text hashes, 0 = padding). An item is kept when every run shows the same set
+    of distinct option texts and keys the same text; its canonical order is the hashes sorted
+    ascending (independent of any run's shuffle). Dropped: ``duplicate_options`` (two options
+    with the same text hash), ``inconsistent_options`` (option sets differ between runs),
+    ``inconsistent_key`` (runs key different texts).
+    """
+    sets: dict[int, tuple[int, ...]] = {}
+    key_text: dict[int, set[int]] = {}
+    bad: dict[int, str] = {}
+    for _, a in units:
+        ids = np.asarray(a["item_id"], dtype=np.int64)
+        keys = np.asarray(a["key"], dtype=np.int64)
+        oh = np.asarray(a["opt_hash"], dtype=np.int64)
+        for t, q in enumerate(ids.tolist()):
+            row = [int(h) for h in oh[t] if h != 0]
+            s = tuple(sorted(row))
+            if len(set(row)) != len(row):
+                bad.setdefault(q, "duplicate_options")
+            elif sets.setdefault(q, s) != s:
+                bad.setdefault(q, "inconsistent_options")
+            key_text.setdefault(q, set()).add(int(oh[t, keys[t]]))
+    for q, ks in key_text.items():
+        if len(ks) > 1:
+            bad.setdefault(q, "inconsistent_key")
+    keep = sorted(q for q in sets if q not in bad)
+    k_max = max((len(sets[q]) for q in keep), default=0)
+    opt = np.zeros((len(keep), k_max), dtype=np.int64)
+    key = np.zeros(len(keep), dtype=np.int64)
+    n_opt = np.zeros(len(keep), dtype=np.int64)
+    for i, q in enumerate(keep):
+        s = sets[q]
+        opt[i, : len(s)] = s
+        n_opt[i] = len(s)
+        key[i] = s.index(next(iter(key_text[q])))
+    dropped = {r: 0 for r in ("duplicate_options", "inconsistent_options", "inconsistent_key")}
+    for r in bad.values():
+        dropped[r] += 1
+    return CanonicalOptions(np.asarray(keep, dtype=np.int64), opt, key, n_opt, dropped)

@@ -521,10 +521,13 @@ def stage_build(cfg: StudyConfig, store: UnitStore) -> None:
 def _build_other(store: UnitStore, b: str, kept: set[str], family_of: dict[str, int]) -> None:
     """GPQA / BBH matrix: items and keys as embedded in the details (no revisions).
 
-    Items whose embedded key differs between runs are dropped; models failing the adapter
-    gate against their ``results_*.json`` accuracy are excluded.
+    BBH: items whose embedded key differs between runs are dropped. GPQA: the harness shuffles
+    the options per run, so responses and keys are mapped by option text hash to one canonical
+    order (:func:`keyaudit.matrix.canonical_options`); units fetched without option hashes are
+    refused. Models failing the adapter gate against their ``results_*.json`` accuracy are
+    excluded.
     """
-    from keyaudit.matrix import build_matrix
+    from keyaudit.matrix import build_matrix, canonical_options
     from keyaudit.sources import leaderboard
 
     units, gate_fail = [], []
@@ -543,21 +546,40 @@ def _build_other(store: UnitStore, b: str, kept: set[str], family_of: dict[str, 
     if not units:
         store.log(f"build/{b}: no readable models passing the gate; skipped")
         return
-    keys: dict[int, set[int]] = {}
-    for _, a in units:
-        for q, k in zip(a["item_id"], a["key"], strict=True):
-            keys.setdefault(int(q), set()).add(int(k))
-    ids = np.asarray(sorted(q for q, ks in keys.items() if len(ks) == 1), dtype=np.int64)
-    key = np.asarray([next(iter(keys[int(q)])) for q in ids])
-    k_opt = len(leaderboard.SPECS[b].choices)
-    m, rep = build_matrix(b, ids, None, key, np.full(ids.size, k_opt), np.full(ids.size, b), units)
+    extra: dict[str, Any] = {}
+    if b == "gpqa":
+        missing = [n for n, a in units if "opt_hash" not in a]
+        if missing:
+            raise PreconditionFailed(
+                f"build/gpqa: {len(missing)} units have no option hashes (fetched before the "
+                f"canonical GPQA mapping); delete units/fetch/gpqa and re-run the fetch stage"
+            )
+        can = canonical_options(units)
+        n_items_seen = len({int(q) for _, a in units for q in a["item_id"]})
+        m, rep = build_matrix(
+            b, can.item_id, can.opt_hash, can.key, can.n_options, np.full(can.item_id.size, b),
+            units,
+        )  # fmt: skip
+        extra = {"canonical_dropped": can.dropped, "n_items_seen": n_items_seen,
+                 "dropped_inconsistent_keys": can.dropped["inconsistent_key"]}  # fmt: skip
+    else:
+        keys: dict[int, set[int]] = {}
+        for _, a in units:
+            for q, k in zip(a["item_id"], a["key"], strict=True):
+                keys.setdefault(int(q), set()).add(int(k))
+        ids = np.asarray(sorted(q for q, ks in keys.items() if len(ks) == 1), dtype=np.int64)
+        key = np.asarray([next(iter(keys[int(q)])) for q in ids])
+        k_opt = len(leaderboard.SPECS[b].choices)
+        m, rep = build_matrix(
+            b, ids, None, key, np.full(ids.size, k_opt), np.full(ids.size, b), units
+        )
+        extra = {"dropped_inconsistent_keys": int(len(keys) - ids.size)}
     fam = np.asarray([family_of.get(x, -1) for x in m.models])
     store.save(
         f"build/{b}",
         {**m.to_arrays(), "family": fam},
-        {"report": asdict(rep), "gate_failed": gate_fail,
-         "dropped_inconsistent_keys": int(len(keys) - ids.size)},
-    )  # fmt: skip
+        {"report": asdict(rep), "gate_failed": gate_fail, **extra},
+    )
 
 
 # ---------------------------------------------------------------------------------------------

@@ -223,3 +223,33 @@ def test_weighted_rate_reflects_subject_mix() -> None:
     sel = np.ones(100, dtype=bool)
     # raw labeled rate 5/20 = 25%; weighted (10 * 0.5 + 90 * 0) / 100 = 5%
     assert runner._weighted_rate(y, labeled, subject, sel) == pytest.approx(0.05)
+
+
+def test_build_gpqa_maps_by_option_hash_and_refuses_old_units(tmp_path: Path) -> None:
+    cfg = load_config(_config(tmp_path))
+    store = runner.open_store(cfg)
+    rng = np.random.default_rng(1)
+    hashes = {q: [10 * q + k + 1 for k in range(4)] for q in range(1, 21)}  # synthetic
+    keyed = {q: h[0] for q, h in hashes.items()}
+    for j in range(3):
+        order = {q: list(rng.permutation(h)) for q, h in hashes.items()}
+        ids = np.asarray(sorted(order), dtype=np.int64)
+        oh = np.asarray([order[q] for q in ids], dtype=np.int64)
+        key = np.asarray([order[q].index(keyed[q]) for q in ids])
+        resp = key.copy() if j < 2 else (key + 1) % 4
+        n_corr = int((resp == key).sum())
+        store.save(
+            f"fetch/gpqa/m{j}",
+            {"item_id": ids, "key": key, "response": resp, "opt_hash": oh},
+            {"n_correct": n_corr, "n_items": ids.size, "reported_acc": n_corr / ids.size},
+        )
+    runner._build_other(store, "gpqa", {"m0", "m1", "m2"}, {"m0": 0, "m1": 0, "m2": 1})
+    arrays, meta = store.load("build/gpqa")
+    assert arrays["responses"].shape == (20, 3) and meta["dropped_inconsistent_keys"] == 0
+    c = arrays["responses"] == arrays["key"][:, None]
+    assert c[:, :2].all() and not c[:, 2].any()
+    # a unit fetched without option hashes is refused
+    a, m = store.load("fetch/gpqa/m2")
+    store.save("fetch/gpqa/m3", {k: v for k, v in a.items() if k != "opt_hash"}, m)
+    with pytest.raises(runner.PreconditionFailed, match="option hashes"):
+        runner._build_other(store, "gpqa", {"m0", "m3"}, {})

@@ -307,6 +307,21 @@ def test_parse_gpqa_hides_text() -> None:
     assert a["item_id"][0] == leaderboard.stable_id("recABC") and a["item_id"][0] > 0
 
 
+def test_parse_gpqa_hashes_shuffled_options() -> None:
+    spec = leaderboard.SPECS["gpqa"]
+    opts = ["alpha one", "beta two", "gamma three", "delta four"]  # synthetic, not GPQA
+    doc = {"Record ID": "recX", **dict(zip(leaderboard.GPQA_CHOICE_FIELDS, opts, strict=True))}
+    rows = [{"doc_id": 0, "doc": doc, "target": "(C)", "filtered_resps": _lls([-3, -1, -2, -4])}]
+    a = leaderboard.parse_samples(spec, rows)
+    assert a["opt_hash"].shape == (1, 4)
+    assert a["opt_hash"][0].tolist() == [text_hash(o) for o in opts]
+    assert a["key"].tolist() == [2] and a["response"].tolist() == [1]
+    assert all(v.dtype.kind in "iuf" for v in a.values())  # numbers only, no text kept
+    # rows without the option fields (old units) carry no hashes
+    rows[0]["doc"] = {"Record ID": "recX"}
+    assert "opt_hash" not in leaderboard.parse_samples(spec, rows)
+
+
 def test_acc_norm_changes_argmax() -> None:
     spec = leaderboard.SPECS["bbh_navigate"]  # choices "Yes" (3 chars), "No" (2 chars)
     # raw: "No" wins (-2.9 > -3.2); per character: Yes -1.07, No -1.45
