@@ -1,7 +1,7 @@
 # keyaudit design
 
-Status: v0.1 plan, written at scaffold time (2026-10-24). Module stubs in `src/keyaudit/`
-follow this document. When code and this document disagree, fix one of them in the same
+Status: written at scaffold time (2026-10-24) as the v0.1 plan; the implementation in
+`src/keyaudit/` follows it. When code and this document disagree, fix one of them in the same
 commit and log the deviation in section 14.
 
 ## 1. Question, estimands and claims
@@ -691,5 +691,6 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     baselines.
 25. **Residual variance floor in the calibrated estimator.** Each stratum's residual
     variance is floored at its coarse stratum's pooled labeled residual variance, the
-    analogue of the label-only floor (audit finding 1). Coverage on the real design not yet
-    measured.
+    analogue of the label-only floor (audit finding 1). Coverage on the real design:
+    `scripts/calibrated_coverage.py`; with uninformative scores 98% floored, 85% unfloored
+    (seeded slow test, 200 replicates).

@@ -93,8 +93,8 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-24 (v0.1.0 build; audit findings 1-4 and 7 fixed and re-verified, 5 and 6
-fixed afterwards; study-v1 model stages run; the model-run changes are not re-audited).
+Updated: 2026-10-30 (v0.1.1 prepared, not tagged; audit
+findings 1-7 fixed; the fixes for 5 and 6 and the model-run changes re-audited 2026-10-30).
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -174,7 +174,7 @@ its own commit, from cached data only (no model calls):
   points; the report leads with the in-region rate (DESIGN 14 deviation 22). Measured only
   for independent models without tricks.
 - Finding 8 (info): 4 worker processes ran at once during the v1 runs; no effect on results.
-Findings 1-4 and 7 were re-verified on 2026-10-24; the fixes for 5 and 6 were not.
+Findings 1-4 and 7 were re-verified on 2026-10-24; 5 and 6 in the re-audit below.
 
 Done (study-v1 model stages, 2026-10-24):
 - 101 candidates tried, 100 readable; matrices MMLU-Pro 12,027 x 96, GPQA 536 x 95, BBH
@@ -199,9 +199,37 @@ Done (study-v1 model stages, 2026-10-24):
   `scripts/make_figures.py` -> `docs/figures/`.
 - REPORT.md, README, CHANGELOG match `results/study-v1/`.
 
+Re-audit (2026-10-30; fixes for findings 5 and 6 and the REPORT 3.7 changes; cached units
+only). Result: no error in the fixes; one tooling gap fixed. Details in REPORT 3.7.
+- Finding 5: code matches cross-PPI (labeled items: own fold's map; unlabeled: fold
+  average). Bias reproduced on the slow test's 6,000 draws: old +0.140, new +0.030 points.
+- Finding 6: every figure in REPORT 4.3 recomputed from `runs/items-cov-v*/units` (34/72,
+  35/72, in-region 72/72 twice, normal/basic/BC 41/24/34 and 46/27/29, region-bounded 72/72,
+  width 15.78). Caveat added: coverage panels use B = 20 (limits near the replicate
+  extremes), the study B = 200.
+- Model-run changes: GPQA canonical mapping, one flag set, tie-aware AP and precision at k
+  reviewed; headline, calibrated, model-only and ranking numbers recomputed from
+  `results/study-v1/` and the local units. The variance ratio applies the residual floor to
+  the labels-only variance too (own floors: 1.014 / 1.001 vs 1.01 / 1.00; left as is).
+  Narrow and broad precision at k agree up to k = 200 because the first broad-only positive
+  ranks 222nd. The maintainer-corrections AP counts 23 positives, including the
+  formatting-only qid 11783.
+- Fixed: `scripts/run_simulation.py` rejected `--profile coverage` and had no `--seed`.
+- Added: `scripts/calibrated_coverage.py` (coverage of the calibrated interval on the real
+  labeled design, checkpointed) and a seeded slow test (uninformative scores, 200
+  replicates: 98% floored, 85% unfloored; fails with the floor removed).
+
+Checks (2026-10-30): `uv run pytest` (fast suite), `ruff check`, `ruff format --check` and
+`scripts/reference_values.py` pass; each slow test passes when run on its own (recovery over
+20 seeds 412 s). The full `pytest --runslow` (about 15 min) and the 1,000-replicate coverage
+grid (about 33 min on 3 workers) are queued as a local long run.
+
 Remaining:
-1. Re-audit the fixes for findings 5 and 6 and the model-run changes (REPORT 3.7).
-2. Measure coverage of the calibrated interval with the residual floor on the real design.
+1. Run the coverage grid (`uv run python scripts/calibrated_coverage.py --n-boot 200`), commit
+   `results/calibrated-cov-v1/`, and replace the 200-replicate figure in REPORT 3.1 and 5,
+   DESIGN 14 deviation 25 and the CHANGELOG with the grid. If any cell's floored coverage is
+   below about 93%, treat it as a finding.
+2. Run the full `pytest --runslow` once on this code. Tag v0.1.1 (owner).
 3. Optional: rerun simulation-v1 with the current code (one-function calibration, tie-aware
    AP), add a simulation scenario with one dominant family like the real panel, and measure
    item-bootstrap coverage in the `weak` and `families` scenarios.
@@ -210,4 +238,3 @@ Remaining:
    duplicate-option items come from GPQA or the harness.
 5. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
    is the only way the model-only rate could become informative; owner decision.
-6. Run `pytest --runslow` on the current code. Tag v0.1.0 (published 2026-10-24).

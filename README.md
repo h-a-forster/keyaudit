@@ -9,14 +9,14 @@ keyaudit estimates benchmark key-error rates from existing per-item model respon
 model runs, no LLM judge). It gives intervals and a ranked list of suspect items, calibrates
 the rate against human relabels, and says plainly what responses alone cannot identify.
 
-**Status: v0.1.0, pre-release.** The method, the data layer and the study pipeline are
+**Status: v0.1.1, pre-release.** The method, the data layer and the study pipeline are
 implemented and tested, and the study has been run on 96 Open LLM Leaderboard models
 (MMLU-Pro, GPQA and three BBH tasks). Results are in [REPORT.md](REPORT.md). In short: about
 1.4% of MMLU-Pro's MMLU-derived items have a wrong key by the human-label-calibrated
 estimate, while the model panel alone suggests 22-25%, because the strongest leaderboard
 models share the same wrong answers. An independent audit (2026-10-24) found eight issues,
-all addressed; the fixes for the last two and the changes made during the model run have not
-been re-audited.
+all addressed; a re-audit (2026-10-30) of the last fixes and of the changes made during the
+model run reproduced their numbers (REPORT.md 3.7).
 
 ## Why
 
@@ -157,9 +157,10 @@ or stores the token, and it never writes GPQA question text to any output.
   `scripts/reference_values.py`. They also check the exact observational-equivalence
   construction to 1e-12, recovery on synthetic panels and the baselines against hand
   formulas.
-- Slow simulation checks (`uv run pytest --runslow`) cover rate recovery inside the
-  competence region (bias below 0.005 over 20 seeds) and trick items flagged like mis-keys.
-  They were not re-run for the v0.1.0 changes.
+- Slow checks (`uv run pytest --runslow`) cover rate recovery inside the competence region
+  (bias below 0.005 over 20 seeds), trick items flagged like mis-keys, the calibrated
+  estimator with few labels, and the calibrated interval's coverage on the real labeled
+  design.
 - `scripts/check_data_facts.py` reproduces the data facts in docs/DESIGN.md section 4.2
   against the pinned revisions. Its output is `results/data-facts.json`.
 

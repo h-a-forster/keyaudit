@@ -1,10 +1,11 @@
-# keyaudit report (v0.1.0)
+# keyaudit report (v0.1.1)
 
-Date: 2026-10-24. Every number here comes from committed result sets: `results/study-v1/`
-(the real study, all stages) and `results/simulation-v1/`, `results/items-cov-v1/`,
-`results/items-cov-v2/` (synthetic panels with known truth). Estimands and methods are
-defined in [docs/DESIGN.md](docs/DESIGN.md); deviations are listed in DESIGN section 14.
-Figures are drawn from `results/` by `scripts/make_figures.py`.
+Date: 2026-10-24 (study); re-audit notes 2026-10-30. Every number here comes from committed
+result sets, except where section 3.7 says otherwise: `results/study-v1/` (the real study,
+all stages) and `results/simulation-v1/`, `results/items-cov-v1/`, `results/items-cov-v2/`
+(synthetic panels with known truth). Estimands and methods are defined in
+[docs/DESIGN.md](docs/DESIGN.md); deviations are listed in DESIGN section 14. Figures are
+drawn from `results/` by `scripts/make_figures.py`.
 
 **Summary.**
 
@@ -48,9 +49,9 @@ Figures are drawn from `results/` by `scripts/make_figures.py`.
 - On synthetic panels (section 4) the model ranks planted mis-keys well when its
   assumptions hold (AP 0.95), and the calibrated estimator stays within 0.3 points of the
   truth in every scenario, including the trick-item scenario that mimics the real data.
-- An independent audit (2026-10-24) found eight issues, all addressed; the fixes for
-  findings 5 and 6, and the changes made during the model run (section 3.7), have not been
-  re-audited.
+- An independent audit (2026-10-24) found eight issues, all addressed. A re-audit
+  (2026-10-30) of the fixes for findings 5 and 6 and of the model-run changes reproduced
+  their numbers and found no error in them (section 3.7).
 
 ![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
 
@@ -202,8 +203,12 @@ label-only floor of audit finding 1 (added during this run, section 3.7).
 
 The variance ratio (labels-only variance over calibrated variance) is about 1: the model
 scores carry almost no information about which labeled items are wrong beyond the strata,
-so the calibrated estimate is in effect the labels-only estimate. The interval's coverage
-with the residual floor has not been measured on this design.
+so the calibrated estimate is in effect the labels-only estimate. Coverage with the residual
+floor was simulated on this design (`scripts/calibrated_coverage.py`): with model scores that
+carry no information beyond the strata, as the variance ratio suggests for the real scores, a
+seeded 200-replicate check gives 98% coverage with the floor and 85% without it
+(`tests/test_label_coverage.py`). A grid over score informativeness (1,000 replicates per
+cell) is a longer run whose results are not yet committed.
 
 Transfer to the non-MMLU sources (calibrated scores applied outside the labeled
 population; an extrapolation, not an estimate): narrow 1.96% [1.49%, 2.48%] for STEM
@@ -373,6 +378,28 @@ Ten of the 546 items were dropped because two or more options share a text hash:
   also reported on the MMLU-derived items so that it is compared with the human-label rate
   on the same items. The validate stage and the report were rerun; nothing else changed.
 
+**Re-audit (2026-10-30).** The fixes for audit findings 5 and 6 and the changes above were
+re-checked against the code and recomputed (no new data; a few figures below come from the
+run units under `runs/`, which are not committed):
+
+- Finding 5: unlabeled items get the average of the fold maps and labeled items their own
+  fold's map. The bias figures reproduce exactly (6,000 seeded draws, 50 of 1,000 labeled:
+  old form +0.14 [+0.08, +0.20] points, current form +0.03 [-0.02, +0.08]).
+- Finding 6: all figures in section 4.3 reproduce from the coverage units (34/72 and 35/72
+  overall, 72/72 in region twice, overall bias -0.97 and -0.94 points, region-bounded 72/72
+  with median width 15.8 points; normal, basic and bias-corrected 41, 24, 34 and 46, 27,
+  29 of 72). Caveat: the coverage panels use B = 20, so their percentile limits sit near the
+  replicate minimum and maximum; the study uses B = 200.
+- The calibrated and label-only estimates in 3.1 and every headline number in this report's
+  summary and the README reproduce from `results/study-v1/`. The variance ratio applies the
+  residual floor to the labels-only variance as well; with each estimator's own floor it is
+  1.014 (narrow) and 1.001 (broad) instead of 1.01 and 1.00.
+- Precision at k is the same for the narrow and broad labels up to k = 200 because the first
+  broad-only positive ranks 222nd, not because of a bug. The maintainer-corrections ranking
+  counts all 23 changed items as positives, including the formatting-only one.
+- One fix: `scripts/run_simulation.py` did not accept the `coverage` profile or a seed, so
+  the section 4.3 runs could not use the resume-on-failure wrapper.
+
 ## 4. Simulation study (known truth)
 
 The sizes follow DESIGN 7.2: 100 models, 3,000 items, K = 10 options, a true key-error rate
@@ -531,22 +558,20 @@ interval would not cover; only labels detect that.
   simulated one (AP 0.87-0.95). With 10 replicates per scenario, the coverage statements are
   weak.
 - **Calibrated interval.** The residual variance floor in the calibrated estimator was added
-  during this run by analogy with the label-only floor; its coverage on this design has not
-  been simulated. With a variance ratio of about 1 the calibrated and labels-only intervals
-  agree, which is some reassurance.
+  during this run by analogy with the label-only floor. A seeded simulation of this design
+  with uninformative scores gives 98% coverage (section 3.1); the grid over score
+  informativeness has not been committed yet.
 - **Data handling.** 10 GPQA items were dropped (9 with duplicate options in the details, 1
   by a case-folding hash), 5 MMLU-Pro items could not be mapped across key revisions, one
   model failed the adapter gate and one GPQA unit could not be read. The runs were scored
   against five different MMLU-Pro key revisions; responses are mapped by option text to
   `014c8cf5`, so a model's "correct" here can differ from its leaderboard scoring on items
   whose key changed.
-- **One independent audit, addressed but the last fixes not re-audited.** The audit of
-  2026-10-24 checked the label-only numbers, the joins and this report against `results/`.
-  A re-verification confirmed the fixes for findings 1-4 and 7. The fixes for findings 5
-  (one score function) and 6 (item-bootstrap coverage, region-bounded overall interval) came
-  later and have not been re-audited, and neither have the model-run changes of section
-  3.7. The item-bootstrap coverage is measured on one scenario (independent models) at a
-  smaller panel size than DESIGN 7.2.
+- **Audits.** The audit of 2026-10-24 checked the label-only numbers, the joins and this
+  report against `results/`; a re-verification confirmed the fixes for findings 1-4 and 7,
+  and a re-audit on 2026-10-30 those for findings 5 and 6 and the model-run changes
+  (section 3.7). The item-bootstrap coverage is measured on one scenario (independent
+  models) at a smaller panel size than DESIGN 7.2.
 
 ## 6. Reproducing
 
