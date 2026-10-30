@@ -30,8 +30,11 @@ Details and limits are in [REPORT.md](../REPORT.md).
 
 ## Checks
 
-- Fast suite, `ruff check` and `ruff format --check` pass. Slow tests and the calibrated
-  coverage grid: see AGENTS.md, "Status and next steps".
+- Fast suite, `ruff check` and `ruff format --check` pass. The full suite with slow tests
+  (`pytest --runslow`, 183 tests) passed on 2026-10-30.
+- Calibrated interval coverage on the real labeled design (`results/calibrated-cov-v1/`,
+  1,000 replicates per cell, nominal 95%): 97.8-98.5% narrow, 94.1-95.5% broad with the
+  residual floor; 87.5-92.1% and 92.6-93.5% without it (REPORT.md 3.1).
 - A re-audit on 2026-10-30 reproduced the figures behind the fixes for audit findings 5 and
   6 and the model-run changes (REPORT.md 3.7).
 

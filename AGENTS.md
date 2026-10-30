@@ -220,21 +220,19 @@ only). Result: no error in the fixes; one tooling gap fixed. Details in REPORT 3
   replicates: 98% floored, 85% unfloored; fails with the floor removed).
 
 Checks (2026-10-30): `uv run pytest` (fast suite), `ruff check`, `ruff format --check` and
-`scripts/reference_values.py` pass; each slow test passes when run on its own (recovery over
-20 seeds 412 s). The full `pytest --runslow` (about 15 min) and the 1,000-replicate coverage
-grid (about 33 min on 3 workers) are queued as a local long run.
+`scripts/reference_values.py` pass. Long run `tmp/longrun-2026-10-30.sh` (same day): the full
+`pytest --runslow` passed (183 tests, about 7 min), and the 1,000-replicate coverage grid is
+committed in `results/calibrated-cov-v1/` (floored 97.8-98.5% narrow, 94.1-95.5% broad;
+unfloored 87.5-92.1% and 92.6-93.5%; no cell below 93%). REPORT 3.1 and 5, DESIGN 14
+deviation 25, the CHANGELOG and the release notes carry the grid.
 
 Remaining:
-1. Run the coverage grid (`uv run python scripts/calibrated_coverage.py --n-boot 200`), commit
-   `results/calibrated-cov-v1/`, and replace the 200-replicate figure in REPORT 3.1 and 5,
-   DESIGN 14 deviation 25 and the CHANGELOG with the grid. If any cell's floored coverage is
-   below about 93%, treat it as a finding.
-2. Run the full `pytest --runslow` once on this code. Tag v0.1.1 (owner).
-3. Optional: rerun simulation-v1 with the current code (one-function calibration, tie-aware
+1. Tag v0.1.1 (owner).
+2. Optional: rerun simulation-v1 with the current code (one-function calibration, tie-aware
    AP), add a simulation scenario with one dominant family like the real panel, and measure
    item-bootstrap coverage in the `weak` and `families` scenarios.
-4. Optional: recover the GPQA item dropped by case-folding (case-sensitive hash, re-fetch);
+3. Optional: recover the GPQA item dropped by case-folding (case-sensitive hash, re-fetch);
    evaluate the Platinum MMLU high-school maths overlap; trace whether the 9 GPQA
    duplicate-option items come from GPQA or the harness.
-5. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
+4. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
    is the only way the model-only rate could become informative; owner decision.

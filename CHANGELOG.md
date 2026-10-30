@@ -23,7 +23,9 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   maintainer-corrections ranking with baselines.
 - `scripts/calibrated_coverage.py`: checkpointed coverage simulation of the label-calibrated
   interval on the real labeled design, with and without the residual variance floor, and a
-  seeded slow test (uninformative scores: 98% floored, 85% unfloored).
+  seeded slow test (uninformative scores: 98% floored, 85% unfloored). Results in
+  `results/calibrated-cov-v1` (1,000 replicates per cell: floored 97.8-98.5% narrow,
+  94.1-95.5% broad; unfloored 87.5-92.1% and 92.6-93.5%).
 - Item-bootstrap coverage profile (`keyaudit simulate --profile coverage`) and
   `results/items-cov-v1`, `results/items-cov-v2`.
 

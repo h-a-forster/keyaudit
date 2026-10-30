@@ -204,11 +204,16 @@ label-only floor of audit finding 1 (added during this run, section 3.7).
 The variance ratio (labels-only variance over calibrated variance) is about 1: the model
 scores carry almost no information about which labeled items are wrong beyond the strata,
 so the calibrated estimate is in effect the labels-only estimate. Coverage with the residual
-floor was simulated on this design (`scripts/calibrated_coverage.py`): with model scores that
-carry no information beyond the strata, as the variance ratio suggests for the real scores, a
-seeded 200-replicate check gives 98% coverage with the floor and 85% without it
-(`tests/test_label_coverage.py`). A grid over score informativeness (1,000 replicates per
-cell) is a longer run whose results are not yet committed.
+floor was simulated on this design (`scripts/calibrated_coverage.py`, `results/calibrated-cov-v1/`;
+1,000 replicates per cell, seed 20261030) with model scores as informative as the study's (AUC
+0.77 on the labeled items), uninformative, and twice as informative. The floored interval
+covers 97.8-98.5% for narrow (conservative) and 94.1-95.5% for broad (each Clopper-Pearson
+interval contains 95%); without the floor it covers 87.5-92.1% and 92.6-93.5%. The floor
+widens the narrow interval by a fifth to a quarter (median 1.32 against 1.08 points with
+study-like scores) and the broad one by about 4%. The estimate is unbiased within 1.6
+standard errors in every cell (largest -0.022 points). The seeded 200-replicate check in
+`tests/test_label_coverage.py` (uninformative scores: 98% floored, 85% without) is close to
+the grid's 98.2% and 87.5%.
 
 Transfer to the non-MMLU sources (calibrated scores applied outside the labeled
 population; an extrapolation, not an estimate): narrow 1.96% [1.49%, 2.48%] for STEM
@@ -558,9 +563,9 @@ interval would not cover; only labels detect that.
   simulated one (AP 0.87-0.95). With 10 replicates per scenario, the coverage statements are
   weak.
 - **Calibrated interval.** The residual variance floor in the calibrated estimator was added
-  during this run by analogy with the label-only floor. A seeded simulation of this design
-  with uninformative scores gives 98% coverage (section 3.1); the grid over score
-  informativeness has not been committed yet.
+  during this run by analogy with the label-only floor. In a simulation of this design it
+  covers 97.8-98.5% for narrow (conservative) and 94.1-95.5% for broad, with uninformative,
+  study-like and twice as informative scores (section 3.1).
 - **Data handling.** 10 GPQA items were dropped (9 with duplicate options in the details, 1
   by a case-folding hash), 5 MMLU-Pro items could not be mapped across key revisions, one
   model failed the adapter gate and one GPQA unit could not be read. The runs were scored

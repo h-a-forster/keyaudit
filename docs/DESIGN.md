@@ -692,5 +692,7 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
 25. **Residual variance floor in the calibrated estimator.** Each stratum's residual
     variance is floored at its coarse stratum's pooled labeled residual variance, the
     analogue of the label-only floor (audit finding 1). Coverage on the real design:
-    `scripts/calibrated_coverage.py`; with uninformative scores 98% floored, 85% unfloored
-    (seeded slow test, 200 replicates).
+    `scripts/calibrated_coverage.py` (`results/calibrated-cov-v1`, 1,000 replicates per cell):
+    floored 97.8-98.5% narrow and 94.1-95.5% broad, unfloored 87.5-92.1% and 92.6-93.5%, over
+    uninformative, study-like and twice as informative scores. The seeded slow test (200
+    replicates, uninformative scores) gives 98% floored, 85% unfloored.

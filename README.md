@@ -109,7 +109,9 @@ them labeled by MMLU-Redux 2.0; 95% intervals):
 
 For reference, over all 12,027 MMLU-Pro items the model-only flag rate is 22.43%
 [21.30%, 23.39%] in the competence region and 25.37% overall. Flag-rate intervals on the
-MMLU-derived items resample items with the fit held fixed (REPORT.md 3.2).
+MMLU-derived items resample items with the fit held fixed (REPORT.md 3.2). In a simulation of
+the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94.1-95.5%
+(broad) (REPORT.md 3.1).
 
 ![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
 
@@ -160,7 +162,7 @@ or stores the token, and it never writes GPQA question text to any output.
 - Slow checks (`uv run pytest --runslow`) cover rate recovery inside the competence region
   (bias below 0.005 over 20 seeds), trick items flagged like mis-keys, the calibrated
   estimator with few labels, and the calibrated interval's coverage on the real labeled
-  design.
+  design. The full suite, slow tests included (183 tests), passed on 2026-10-30.
 - `scripts/check_data_facts.py` reproduces the data facts in docs/DESIGN.md section 4.2
   against the pinned revisions. Its output is `results/data-facts.json`.
 
