@@ -111,7 +111,8 @@ For reference, over all 12,027 MMLU-Pro items the model-only flag rate is 22.43%
 [21.30%, 23.39%] in the competence region and 25.37% overall. Flag-rate intervals on the
 MMLU-derived items resample items with the fit held fixed (REPORT.md 3.2). In a simulation of
 the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94.1-95.5%
-(broad) (REPORT.md 3.1).
+(broad), but broad misses are one-sided: its upper limit holds in 95.2-96.1% of replicates
+(REPORT.md 3.1).
 
 ![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
 

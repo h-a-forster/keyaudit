@@ -222,9 +222,10 @@ only). Result: no error in the fixes; one tooling gap fixed. Details in REPORT 3
 Checks (2026-10-30): `uv run pytest` (fast suite), `ruff check`, `ruff format --check` and
 `scripts/reference_values.py` pass. Long run `tmp/longrun-2026-10-30.sh` (same day): the full
 `pytest --runslow` passed (183 tests, about 7 min), and the 1,000-replicate coverage grid is
-committed in `results/calibrated-cov-v1/` (floored 97.8-98.5% narrow, 94.1-95.5% broad;
-unfloored 87.5-92.1% and 92.6-93.5%; no cell below 93%). REPORT 3.1 and 5, DESIGN 14
-deviation 25, the CHANGELOG and the release notes carry the grid.
+committed in `results/calibrated-cov-v1/` (floored 97.8-98.5% narrow, 94.1-95.5% broad,
+misses one-sided with the upper limit holding in 95.2-96.1%; unfloored 87.5-92.1% and
+92.6-93.5%; no cell below 93%). REPORT 3.1 and 5, DESIGN 14 deviation 25, the CHANGELOG and
+the release notes carry the grid.
 
 Remaining:
 1. Tag v0.1.1 (owner).

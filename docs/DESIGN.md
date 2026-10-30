@@ -694,5 +694,6 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     analogue of the label-only floor (audit finding 1). Coverage on the real design:
     `scripts/calibrated_coverage.py` (`results/calibrated-cov-v1`, 1,000 replicates per cell):
     floored 97.8-98.5% narrow and 94.1-95.5% broad, unfloored 87.5-92.1% and 92.6-93.5%, over
-    uninformative, study-like and twice as informative scores. The seeded slow test (200
+    uninformative, study-like and twice as informative scores; broad misses are one-sided
+    (upper limit holds in 95.2-96.1% of replicates). The seeded slow test (200
     replicates, uninformative scores) gives 98% floored, 85% unfloored.
