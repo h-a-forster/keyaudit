@@ -205,10 +205,17 @@ The variance ratio (labels-only variance over calibrated variance) is about 1: t
 scores carry almost no information about which labeled items are wrong beyond the strata,
 so the calibrated estimate is in effect the labels-only estimate. Coverage with the residual
 floor was simulated on this design (`scripts/calibrated_coverage.py`, `results/calibrated-cov-v1/`;
-1,000 replicates per cell, seed 20261030) with model scores as informative as the study's (AUC
-0.77 on the labeled items), uninformative, and twice as informative. The floored interval
+1,000 replicates per cell, seed 20261030) with model scores as informative as the study's
+narrow scores (AUC 0.77 on the labeled items), uninformative, and twice as informative; the
+broad cells reuse the narrow score shift, so their study-like scores are more informative
+than the study's broad scores (AUC 0.695, section 3.3). The floored interval
 covers 97.8-98.5% for narrow (conservative) and 94.1-95.5% for broad (each Clopper-Pearson
-interval contains 95%); without the floor it covers 87.5-92.1% and 92.6-93.5%. The floor
+interval contains 95%); without the floor it covers 87.5-92.1% and 92.6-93.5%. The broad
+misses are one-sided: 48, 39 and 40 of 1,000 floored intervals lie wholly below the true rate
+against 11, 8 and 5 above (study-like, uninformative, twice as informative scores), so the
+broad upper limit holds in 95.2-96.1% of replicates, not the 97.5% of a symmetric 95% interval.
+The stratified bootstrap check, run with 200 resamples per replicate (the study uses 2,000),
+covers 92.8-94.3% for narrow and 94.1-95.1% for broad. The floor
 widens the narrow interval by a fifth to a quarter (median 1.32 against 1.08 points with
 study-like scores) and the broad one by about 4%. The estimate is unbiased within 1.6
 standard errors in every cell (largest -0.022 points). The seeded 200-replicate check in
@@ -565,7 +572,8 @@ interval would not cover; only labels detect that.
 - **Calibrated interval.** The residual variance floor in the calibrated estimator was added
   during this run by analogy with the label-only floor. In a simulation of this design it
   covers 97.8-98.5% for narrow (conservative) and 94.1-95.5% for broad, with uninformative,
-  study-like and twice as informative scores (section 3.1).
+  study-like and twice as informative scores (section 3.1). Broad misses fall mostly below
+  the true rate, so the broad upper limit holds in only 95.2-96.1% of replicates.
 - **Data handling.** 10 GPQA items were dropped (9 with duplicate options in the details, 1
   by a case-folding hash), 5 MMLU-Pro items could not be mapped across key revisions, one
   model failed the adapter gate and one GPQA unit could not be read. The runs were scored
@@ -597,3 +605,9 @@ uv run keyaudit simulate --profile coverage --seed 20261025 --out runs/items-cov
 
 Units from seed 20261024 were written before the region-bounded interval existed and do
 not record it; rerunning into a fresh directory with the current code does.
+
+The calibrated-interval coverage grid of section 3.1 (`results/calibrated-cov-v1/`):
+
+```sh
+uv run python scripts/calibrated_coverage.py --reps 1000 --chunk 50 --n-boot 200 --workers 3
+```

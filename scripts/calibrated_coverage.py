@@ -1,7 +1,9 @@
 """Coverage of the label-calibrated interval on the real labeled design (seeded, checkpointed).
 
-Usage: uv run python scripts/calibrated_coverage.py [--reps 1000] [--chunk 50]
+Usage: uv run python scripts/calibrated_coverage.py [--reps 1000] [--chunk 50] [--n-boot 0]
        [--out runs/calibrated-cov-v1] [--results results/calibrated-cov-v1] [--workers 3]
+
+The published grid (``results/calibrated-cov-v1``) was run with ``--n-boot 200``.
 
 Simulates the design of the headline estimate (REPORT 3.1): the real per-subject population
 sizes, labeled counts and categories of the MMLU-derived items (``results/study-v1/labels.json``,
