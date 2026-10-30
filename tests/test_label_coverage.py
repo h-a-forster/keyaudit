@@ -8,10 +8,12 @@ with the category-level floor used by ``runner.label_estimates`` it covers at le
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from keyaudit import stats
 from keyaudit.estimate import collapse_strata
@@ -75,3 +77,26 @@ def test_variance_floor_applies() -> None:
     floored = stats.stratified_difference_estimate(f0, lab, y, strata, var_floor=floor)
     assert plain.strata["a"]["var"] == 0.0 and floored.strata["a"]["var"] > 0.0
     assert floored.estimate == plain.estimate and floored.se > plain.se
+
+
+@pytest.mark.slow
+def test_calibrated_interval_coverage_with_residual_floor() -> None:
+    """The label-calibrated interval (REPORT 3.1) on the same design, with model scores that
+    carry no information beyond the strata (the study's variance ratio is about 1): the
+    residual floor reaches nominal coverage, the unfloored interval does not. The full grid
+    of scenarios is ``scripts/calibrated_coverage.py``."""
+    spec = importlib.util.spec_from_file_location(
+        "calibrated_coverage", Path(__file__).parents[1] / "scripts" / "calibrated_coverage.py"
+    )
+    assert spec and spec.loader
+    cc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cc)
+    design = cc.load_design()
+    hit = hit_plain = 0
+    reps = 200
+    for r in range(reps):
+        o = cc.replicate(design, "narrow", 0.0, np.random.default_rng([20261030, r]), r)
+        hit += o["lo"] <= o["truth"] <= o["hi"]
+        hit_plain += o["lo_plain"] <= o["truth"] <= o["hi_plain"]
+    assert hit / reps >= 0.93
+    assert hit_plain / reps < 0.92
