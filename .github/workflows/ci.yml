@@ -1,6 +1,6 @@
 name: CI
 
-# No push trigger: Actions minutes are metered on private repositories.
+# No push trigger: changes reach main through pull requests, which run CI.
 on:
   pull_request:
   workflow_dispatch:

@@ -5,15 +5,58 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## 0.1.1 - 2026-10-30
+
 ### Study results
 
 - The model stages ran on 100 readable leaderboard models (96 after the adapter gate and
   dedupe). Headline (MMLU-Pro, MMLU-derived items, label-calibrated): narrow 1.42%
   [0.78%, 2.07%], broad 3.91% [2.62%, 5.19%]. The model-only flag rate on the same items
   (22.95%, about 16x; GPQA 54%) is inflated by a correlated, weak panel: the 10 strongest
-  models are all Qwen-based and sit in one answer-agreement cluster of 44. Suspect ranking AP 0.080 [0.052, 0.142] against Redux wrong
-  keys (random 0.019; best baseline 0.071). REPORT.md section 3, figures in `docs/figures/`
-  (`scripts/make_figures.py`).
+  models are all Qwen-based and sit in one answer-agreement cluster of 44. Suspect ranking
+  AP 0.080 [0.052, 0.142] against Redux wrong keys (random 0.019; best baseline 0.071).
+  REPORT.md section 3, figures in `docs/figures/` (`scripts/make_figures.py`).
+
+### Added
+
+- Validation: Platinum BBH check (flags among clean and rejected items, AP vs baselines) and a
+  maintainer-corrections ranking with baselines.
+- `scripts/calibrated_coverage.py`: checkpointed coverage simulation of the label-calibrated
+  interval on the real labeled design, with and without the residual variance floor, and a
+  seeded slow test (uninformative scores: 98% floored, 85% unfloored).
+- Item-bootstrap coverage profile (`keyaudit simulate --profile coverage`) and
+  `results/items-cov-v1`, `results/items-cov-v2`.
+
+### Changed
+
+Fixes from the independent audit of 2026-10-24 (findings 1-7; 1-4 and 7 re-verified the
+same day, 5 and 6 re-audited on 2026-10-30, REPORT.md 3.7):
+
+- Calibrated estimator: unlabeled items get the average of the cross-fitted fold maps
+  instead of a full-fit map, so one score function is used throughout (audit finding 5).
+  The mixed form was biased +0.14 points with 50 labeled items; negligible at 25% labels.
+- Item-bootstrap coverage measured: the overall-rate percentile interval covers 34/72 and
+  35/72 (the rate is about 1 point low outside the competence region), the in-region
+  interval 72/72. The report now gives the overall rate with a region-bounded interval
+  (72/72, median width 15.8 points) and leads with the in-region rate (audit finding 6).
+- Label-only intervals floor each stratum's variance at its category's pooled labeled
+  variance; the previous interval covered ~86% in a simulation of the actual design. New:
+  narrow 1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%]. Seeded coverage test added.
+- Per-subject Fisher tests (Holm over subjects) and population-weighted category rates; the
+  chemistry result is reframed as college chemistry (virology also stands out).
+- The Redux join records the Redux row and option overlap per item; the labels stage reports
+  a duplicate-stem sensitivity estimate.
+- REPORT.md: maintainer corrections are 22 substantive key changes; the 10 Redux-`ok` items
+  are 6 Redux rows. Labeled count 2,893 throughout the docs.
+
+Made during the model run:
+
+- The label-calibrated estimator floors each stratum's residual variance at its category's
+  pooled labeled residual variance (analogue of the label-only floor).
+- `validate.operating_point` accepts the flag set; the study evaluates its own flags
+  (q-values over the whole matrix) instead of recomputing q-values on labeled items only.
+- The report adds the model-only flag rate on the MMLU-derived items
+  (`mmlu_derived_model_only`) for comparison with the label-based rate on the same items.
 
 ### Fixed
 
@@ -24,43 +67,8 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `average_precision` treats tied scores as one threshold; position tie-breaking let the
   stratified bootstrap inflate AP for tie-heavy baselines. Precision/recall at k use the
   expected value over random order within tied scores.
-- `validate.operating_point` accepts the flag set; the study evaluates its own flags
-  (q-values over the whole matrix) instead of recomputing q-values on labeled items only.
-- The report adds the model-only flag rate on the MMLU-derived items
-  (`mmlu_derived_model_only`) for comparison with the label-based rate on the same items.
-- The label-calibrated estimator floors each stratum's residual variance at its category's
-  pooled labeled residual variance (analogue of the label-only floor).
-
-### Added
-
-- Validation: Platinum BBH check (flags among clean and rejected items, AP vs baselines) and a
-  maintainer-corrections ranking with baselines.
-
-### Audit fixes
-
-Fixes from the independent audit of 2026-10-24 (findings 1-7; the fixes for 5 and 6 have not
-been re-audited).
-
-### Changed
-
-- Calibrated estimator: unlabeled items get the average of the cross-fitted fold maps
-  instead of a full-fit map, so one score function is used throughout (audit finding 5).
-  The mixed form was biased +0.14 points with 50 labeled items; negligible at 25% labels.
-- Item-bootstrap coverage measured (new `coverage` simulation profile): the overall-rate
-  percentile interval covers 34/72 and 35/72 (the rate is about 1 point low outside the
-  competence region), the in-region interval 72/72. The report now gives the overall rate
-  with a region-bounded interval (72/72, median width 15.8 points) and leads with the
-  in-region rate (audit finding 6).
-
-- Label-only intervals floor each stratum's variance at its category's pooled labeled
-  variance; the previous interval covered ~86% in a simulation of the actual design. New:
-  narrow 1.48% [0.83%, 2.13%], broad 3.97% [2.68%, 5.25%]. Seeded coverage test added.
-- Per-subject Fisher tests (Holm over subjects) and population-weighted category rates; the
-  chemistry result is reframed as college chemistry (virology also stands out).
-- The Redux join records the Redux row and option overlap per item; the labels stage reports
-  a duplicate-stem sensitivity estimate.
-- REPORT.md: maintainer corrections are 22 substantive key changes; the 10 Redux-`ok` items
-  are 6 Redux rows. Labeled count 2,893 throughout the docs.
+- `scripts/run_simulation.py` accepts the `coverage` profile and passes `--seed`, so the
+  coverage runs can use the resume-on-failure wrapper.
 
 ## 0.1.0 - 2026-10-24
 
