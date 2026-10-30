@@ -1,4 +1,4 @@
-"""The resume-on-failure wrapper retries failed attempts and logs without local paths."""
+"""The resume-on-failure wrappers retry failed attempts and log without local paths."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("run_study", ROOT / "scripts" / "run_study.py")
+def _load(name: str = "run_study") -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -60,3 +60,17 @@ def test_wrapper_stops_on_precondition(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.setattr(mod.subprocess, "call", lambda cmd: calls.append(cmd) or 3)
     assert mod.main(["--config", str(_config(tmp_path, tmp_path / "r")), "--pause", "0"]) == 3
     assert len(calls) == 1
+
+
+def test_simulation_wrapper_passes_profile_and_seed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The coverage runs of REPORT 4.3 (profile ``coverage``, two seeds) go through the wrapper."""
+    mod = _load("run_simulation")
+    calls: list[list[str]] = []
+    monkeypatch.setattr(mod.subprocess, "call", lambda cmd: calls.append(cmd) or 0)
+    args = ["--profile", "coverage", "--seed", "20261025", "--out", str(tmp_path / "r")]
+    assert mod.main([*args, "--results", str(tmp_path / "res"), "--pause", "0"]) == 0
+    cmd = calls[0]
+    assert cmd[cmd.index("--profile") + 1] == "coverage"
+    assert cmd[cmd.index("--seed") + 1] == "20261025"
