@@ -10,7 +10,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from keyaudit import __version__
-from keyaudit.checkpoint import MAX_WORKERS
+from keyaudit.checkpoint import MAX_WORKERS, ConfigMismatch
 from keyaudit.study.config import load_config
 from keyaudit.study.runner import STAGES
 
@@ -82,7 +82,11 @@ def main(argv: list[str] | None = None) -> int:
         workers = min(args.workers, MAX_WORKERS)
         print(run_simulation(args.out, args.results, args.profile, args.seed, workers))
         return 0
-    cfg = load_config(args.config)
+    try:
+        cfg = load_config(args.config)
+    except (OSError, ValueError, TypeError) as exc:  # TOMLDecodeError is a ValueError
+        print(f"keyaudit: invalid config {args.config}: {exc}", file=sys.stderr)
+        return 2
     if args.command == "check-config":
         print(f"{cfg.study.name} {cfg.hash()}")
         return 0
@@ -111,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
             from keyaudit.study.runner import run_study
 
             run_study(cfg, stages=("fetch",), workers=cfg.run.workers)
-    except PreconditionFailed as exc:
+    except (PreconditionFailed, ConfigMismatch) as exc:
         print(f"keyaudit: precondition failed: {exc}", file=sys.stderr)
         return 3
     except FileNotFoundError as exc:

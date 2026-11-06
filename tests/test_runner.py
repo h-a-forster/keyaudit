@@ -170,6 +170,15 @@ def test_config_change_refuses_resume(tmp_path: Path) -> None:
         runner.open_store(load_config(cfg_path))
 
 
+def test_cli_refuses_a_run_made_with_another_config(tmp_path: Path) -> None:
+    cfg_path = _config(tmp_path)
+    runner.open_store(load_config(cfg_path))
+    text = cfg_path.read_text(encoding="utf-8")
+    cfg_path.write_text(text.replace("fdr_alpha = 0.10", "fdr_alpha = 0.01"), encoding="utf-8")
+    assert main(["report", "--config", str(cfg_path)]) == 3
+    assert main(["run", "--config", str(cfg_path), "--stages", "fit"]) == 3
+
+
 def test_status_is_read_only(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     cfg_path = _config(tmp_path)
     assert main(["status", "--config", str(cfg_path)]) == 0

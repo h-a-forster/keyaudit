@@ -125,7 +125,8 @@ def _check(cfg: StudyConfig) -> None:
         need(len(rev) == 40 and all(c in "0123456789abcdef" for c in rev), f"not a SHA: {rev}")
     need(0 < d.per_model_budget_mb <= d.total_budget_mb <= 3000, "data budgets: <= 3000 MB")
     need(m.alpha_pi > 0 and m.outer_iter >= 1, "model: alpha_pi > 0, outer_iter >= 1")
-    need(m.groups in ("category", "source", "subject"), "model.groups")
+    # build_matrix groups MMLU-Pro by category; nothing else is implemented
+    need(m.groups == "category", "model.groups must be 'category'")
     need(m.tau == "auto" or float(m.tau) > 0, "model.tau must be 'auto' or a positive number")
     need(0.0 < m.kappa0 < 1.0, "model.kappa0 must be in (0, 1)")
     need(u.n_boot >= 0 and u.boot_chunk >= 1, "uncertainty: n_boot >= 0, boot_chunk >= 1")

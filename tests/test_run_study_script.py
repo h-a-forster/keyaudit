@@ -54,11 +54,14 @@ def test_wrapper_gives_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     assert "gave up (exit 1)" in (out / "progress.log").read_text(encoding="utf-8")
 
 
-def test_wrapper_stops_on_precondition(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("code", [2, 3])
+def test_wrapper_stops_on_refusal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, code: int
+) -> None:
     mod = _load()
     calls: list[list[str]] = []
-    monkeypatch.setattr(mod.subprocess, "call", lambda cmd: calls.append(cmd) or 3)
-    assert mod.main(["--config", str(_config(tmp_path, tmp_path / "r")), "--pause", "0"]) == 3
+    monkeypatch.setattr(mod.subprocess, "call", lambda cmd: calls.append(cmd) or code)
+    assert mod.main(["--config", str(_config(tmp_path, tmp_path / "r")), "--pause", "0"]) == code
     assert len(calls) == 1
 
 

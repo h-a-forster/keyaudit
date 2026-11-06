@@ -87,6 +87,8 @@ def test_config_hash_refusal(tmp_path: Path) -> None:
     assert len(manifest["starts"]) == 2
     with pytest.raises(ConfigMismatch):
         UnitStore(tmp_path, "bbb")
+    with pytest.raises(ConfigMismatch):  # a report must not mix a run with another config
+        UnitStore(tmp_path, "bbb", read_only=True)
 
 
 def test_skip_on_rerun(tmp_path: Path) -> None:

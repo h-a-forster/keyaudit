@@ -5,7 +5,8 @@ leave-one-family-out refit, ...). A finished unit is written atomically to
 ``<root>/units/<unit_id>.npz`` plus ``<unit_id>.json`` (status, config hash, package version,
 seconds, unit metadata), and a line is appended to ``<root>/progress.log``. A rerun skips
 units whose files exist. A run directory whose ``manifest.json`` records a different config
-hash refuses to open. At most 3 worker processes, BLAS threads pinned to 1 in each worker.
+hash refuses to open, for reading too. At most 3 worker processes, BLAS threads pinned to 1 in
+each worker.
 
 Unit functions are plain module-level callables (picklable) that take keyword arguments and
 return ``{"arrays": {name: ndarray}, "meta": {...}}``. A function that raises
@@ -113,10 +114,7 @@ class UnitStore:
         self.log_path = self.root / "progress.log"
         self.manifest_path = self.root / "manifest.json"
         self.read_only = read_only
-        if read_only:  # inspection only (status, report): no manifest entry, no directories
-            return
-        self.units_dir.mkdir(parents=True, exist_ok=True)
-        manifest: dict[str, Any]
+        manifest: dict[str, Any] = {"config_hash": config_hash, "created": _now(), "starts": []}
         if self.manifest_path.exists():
             manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
             if manifest.get("config_hash") != config_hash:
@@ -125,8 +123,9 @@ class UnitStore:
                     f"{str(manifest.get('config_hash'))[:12]}..., not {config_hash[:12]}...; "
                     "use a new out_dir or restore the original config"
                 )
-        else:
-            manifest = {"config_hash": config_hash, "created": _now(), "starts": []}
+        if read_only:  # inspection only (status, report): no manifest entry, no directories
+            return
+        self.units_dir.mkdir(parents=True, exist_ok=True)
         manifest["starts"].append(
             {"time": _now(), "package_version": _package_version(), "git_sha": _git_sha()}
         )

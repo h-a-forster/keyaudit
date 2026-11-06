@@ -5,8 +5,8 @@ Usage: uv run python scripts/run_study.py --config configs/study.toml [--attempt
 
 Wraps ``keyaudit run`` in up to ``--attempts`` attempts. Every finished unit is checkpointed,
 so a rerun only computes what is missing. Progress goes to ``<out_dir>/progress.log``; this
-wrapper appends its own attempt lines there too. Exit code 3 from ``keyaudit run`` means a
-precondition failed (for example too few readable panel models) and is not retried.
+wrapper appends its own attempt lines there too. Exit codes 2 (invalid config) and 3 (a
+precondition failed, for example too few readable panel models) are not retried.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
             with log.open("a", encoding="utf-8") as fh:
                 fh.write(f"{_stamp()} wrapper finished\n")
             return 0
-        if code == 3:
+        if code in (2, 3):
             break
         time.sleep(args.pause)
     with log.open("a", encoding="utf-8") as fh:

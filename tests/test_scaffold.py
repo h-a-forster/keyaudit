@@ -88,6 +88,26 @@ def test_config_rejects_unknown_key(tmp_path: Path) -> None:
         load_config(bad)
 
 
+def test_config_rejects_groups_that_are_not_implemented(tmp_path: Path) -> None:
+    text = (ROOT / "configs" / "study.toml").read_text(encoding="utf-8")
+    bad = tmp_path / "bad.toml"
+    bad.write_text(text.replace('groups = "category"', 'groups = "source"'), encoding="utf-8")
+    with pytest.raises(ValueError, match="groups"):
+        load_config(bad)
+
+
+def test_cli_invalid_config_is_a_clean_exit(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    text = (ROOT / "configs" / "study.toml").read_text(encoding="utf-8")
+    bad = tmp_path / "bad.toml"
+    bad.write_text(text.replace("workers = 3", "workers = 8"), encoding="utf-8")
+    assert main(["run", "--config", str(bad)]) == 2
+    assert main(["status", "--config", str(tmp_path / "missing.toml")]) == 2
+    assert "invalid config" in capsys.readouterr().err
+    assert not (tmp_path / "runs").exists()
+
+
 def test_config_rejects_too_many_workers(tmp_path: Path) -> None:
     text = (ROOT / "configs" / "study.toml").read_text(encoding="utf-8")
     bad = tmp_path / "bad.toml"
