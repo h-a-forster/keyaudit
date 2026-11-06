@@ -166,7 +166,7 @@ or stores the token, and it never writes GPQA question text to any output.
 - Slow checks (`uv run pytest --runslow`) cover rate recovery inside the competence region
   (bias below 0.005 over 20 seeds), trick items flagged like mis-keys, the calibrated
   estimator with few labels, and the calibrated interval's coverage on the real labeled
-  design. The full suite, slow tests included (183 tests), passed on 2026-10-30.
+  design. The full suite, slow tests included (189 tests), passed on 2026-11-06.
 - `scripts/check_data_facts.py` reproduces the data facts in docs/DESIGN.md section 4.2
   against the pinned revisions. Its output is `results/data-facts.json`.
 

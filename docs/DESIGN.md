@@ -568,8 +568,10 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
    been run on a real details repository**: on 2026-10-24 the available token could list
    repository files but every content request returned 403 (conditions not accepted). The
    adapter gate is the safeguard; `scripts/probe_details.py` prints the real schema once a
-   repository is readable. A response letter beyond an item's options (MMLU-Pro items with
-   fewer than 10 options) is recorded as invalid (missing), not as a choice.
+   repository is readable. (Superseded: from commit `816b6b9` on the adapter reads real
+   repositories, and `sources.leaderboard` documents the confirmed layout.) A response
+   letter beyond an item's options (MMLU-Pro items with fewer than 10 options) is recorded
+   as invalid (missing), not as a choice.
 5. Fetch units store option-text hashes (crc32 of the normalised text) instead of option
    text, so options are mapped across key revisions without keeping any item text in the run
    directory. GPQA record ids and BBH inputs are stored as truncated sha256 ids.

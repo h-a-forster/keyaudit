@@ -239,4 +239,7 @@ chunks of `scripts/calibrated_coverage.py` matched their run units and the figur
   traceback and were retried; `model.groups` was ignored (deviation 27).
 - Added: `panel.json` (numbers REPORT quoted from uncommitted units). Lock: certifi, filelock
   and pillow moved past published advisories (OSV shows none for the lock now). CI actions
-  pinned to commits. sdist carries `results/` and `REPORT.md`.
+  pinned to commits. sdist carries `results/` and `REPORT.md`; its tests pass.
+- Checks: `pytest --runslow` (189 tests), `ruff check`, `ruff format --check`, `uv lock --check`
+  and `scripts/reference_values.py` pass. CI has not run on this branch (it runs on pull
+  requests).

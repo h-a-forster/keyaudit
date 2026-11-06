@@ -31,7 +31,7 @@ Details and limits are in [REPORT.md](../REPORT.md).
 ## Checks
 
 - Fast suite, `ruff check` and `ruff format --check` pass. The full suite with slow tests
-  (`pytest --runslow`, 183 tests) passed on 2026-10-30.
+  (`pytest --runslow`, 189 tests) passed on 2026-11-06.
 - Calibrated interval coverage on the real labeled design (`results/calibrated-cov-v1/`,
   1,000 replicates per cell, nominal 95%): 97.8-98.5% narrow, 94.1-95.5% broad with the
   residual floor; 87.5-92.1% and 92.6-93.5% without it (REPORT.md 3.1). Broad misses are
