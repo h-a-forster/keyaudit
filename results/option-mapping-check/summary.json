@@ -1,0 +1,204 @@
+{
+ "note": "point estimates from study-v1 fetch units; intervals are not refitted",
+ "items_dropped": 5,
+ "items_with_changed_responses": 16,
+ "responses_changed": 444,
+ "flags_removed": [
+  2806,
+  2889,
+  2913,
+  3024,
+  3067,
+  3182,
+  3287
+ ],
+ "flags_added": [
+  12165
+ ],
+ "affected_items": [
+  {
+   "item_id": 496,
+   "p_miskey_before": 1.0176425935259914e-07,
+   "p_miskey_after": 2.0407518863674312e-07,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 2806,
+   "p_miskey_before": 0.9880841834685886,
+   "p_miskey_after": 6.958393861111745e-09,
+   "flagged_before": true,
+   "flagged_after": false
+  },
+  {
+   "item_id": 2838,
+   "p_miskey_before": 0.0,
+   "p_miskey_after": 0.006807821215516707,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 2889,
+   "p_miskey_before": 0.9998745636266438,
+   "p_miskey_after": 1.4391704603600175e-06,
+   "flagged_before": true,
+   "flagged_after": false
+  },
+  {
+   "item_id": 2957,
+   "p_miskey_before": 0.9808193559677387,
+   "p_miskey_after": 0.9983549839016318,
+   "flagged_before": true,
+   "flagged_after": true
+  },
+  {
+   "item_id": 3024,
+   "p_miskey_before": 0.9457847998950693,
+   "p_miskey_after": 0.0010663588789300293,
+   "flagged_before": true,
+   "flagged_after": false
+  },
+  {
+   "item_id": 3056,
+   "p_miskey_before": 5.193037124318067e-06,
+   "p_miskey_after": 2.9100062792775105e-07,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 3287,
+   "p_miskey_before": 0.9880841834685886,
+   "p_miskey_after": 4.769786077218896e-08,
+   "flagged_before": true,
+   "flagged_after": false
+  },
+  {
+   "item_id": 3349,
+   "p_miskey_before": 1.3915216178217449e-06,
+   "p_miskey_after": 5.6521227143058184e-08,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 3354,
+   "p_miskey_before": 0.003192434991714621,
+   "p_miskey_after": 0.00295866715403581,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 3504,
+   "p_miskey_before": 0.9999999987296871,
+   "p_miskey_after": 0.9999993801389704,
+   "flagged_before": true,
+   "flagged_after": true
+  },
+  {
+   "item_id": 5545,
+   "p_miskey_before": 1.099062447051935e-06,
+   "p_miskey_after": 1.0134353370938598e-06,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 10155,
+   "p_miskey_before": 1.6314616324564213e-09,
+   "p_miskey_after": 2.0795893895808604e-09,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 10986,
+   "p_miskey_before": 6.173380797003247e-06,
+   "p_miskey_after": 5.4321784203059664e-06,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 11034,
+   "p_miskey_before": 0.002025553862199714,
+   "p_miskey_after": 0.0002137309509017138,
+   "flagged_before": false,
+   "flagged_after": false
+  },
+  {
+   "item_id": 11124,
+   "p_miskey_before": 0.00034437847923152187,
+   "p_miskey_after": 0.00035881904692358635,
+   "flagged_before": false,
+   "flagged_after": false
+  }
+ ],
+ "before": {
+  "n_items": 12027,
+  "flagged": 2953,
+  "E_model_all": 0.2536623370019992,
+  "E_model_region": 0.22428344226982305,
+  "region_share": 0.784318616446329,
+  "flag_rate_mmlu_derived": 0.22953783040837955,
+  "calibrated_narrow": {
+   "estimate": 0.014214801267819765,
+   "ci": [
+    0.007768108970950405,
+    0.020661493564689125
+   ],
+   "n_labeled": 2892
+  },
+  "ranking_narrow": {
+   "ap": 0.07965128077421851,
+   "auc": 0.7730959097320169,
+   "n_flagged": 667,
+   "tp": 33
+  },
+  "calibrated_broad": {
+   "estimate": 0.03908075778649944,
+   "ci": [
+    0.026238375761937067,
+    0.05192313981106182
+   ],
+   "n_labeled": 2892
+  },
+  "ranking_broad": {
+   "ap": 0.07830806960501631,
+   "auc": 0.695048226767239,
+   "n_flagged": 667,
+   "tp": 45
+  }
+ },
+ "after": {
+  "n_items": 12027,
+  "flagged": 2947,
+  "E_model_all": 0.253273068398251,
+  "E_model_region": 0.22387919871090872,
+  "region_share": 0.784318616446329,
+  "flag_rate_mmlu_derived": 0.22935170300237043,
+  "calibrated_narrow": {
+   "estimate": 0.01420919728612386,
+   "ci": [
+    0.007762464159904637,
+    0.020655930412343086
+   ],
+   "n_labeled": 2892
+  },
+  "ranking_narrow": {
+   "ap": 0.07965710089257666,
+   "auc": 0.773121096111223,
+   "n_flagged": 667,
+   "tp": 33
+  },
+  "calibrated_broad": {
+   "estimate": 0.03907451864795288,
+   "ci": [
+    0.026231921002222172,
+    0.05191711629368359
+   ],
+   "n_labeled": 2892
+  },
+  "ranking_broad": {
+   "ap": 0.07824853434015523,
+   "auc": 0.6944617597698394,
+   "n_flagged": 667,
+   "tp": 45
+  }
+ }
+}

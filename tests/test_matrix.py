@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from keyaudit.matrix import (
+    BuildReport,
     ResponseMatrix,
     agreement_matrix,
     build_matrix,
@@ -125,6 +126,33 @@ def test_build_matrix_drops_unmappable_items() -> None:
     )  # fmt: skip
     assert m.item_id.tolist() == [11]
     assert rep.dropped_items_unmapped == 1 and rep.per_model_unmapped == {"A": 0, "B": 1}
+
+
+def test_build_matrix_keeps_options_that_share_a_hash_apart() -> None:
+    """Regression: options differing only by case share a hash; all picks went to the first."""
+    h = [7, 7, 8]  # options 0 and 1 share a hash, the key is option 1
+    units = [
+        ("A", {"item_id": np.array([10]), "response": np.array([1]), "opt_hash": np.array([h])}),
+        ("B", {"item_id": np.array([10]), "response": np.array([0]), "opt_hash": np.array([h])}),
+    ]  # fmt: skip
+
+    def build(us: list) -> tuple[ResponseMatrix, BuildReport]:
+        return build_matrix(
+            "mmlu_pro", np.array([10]), np.array([h]), np.array([1]), np.array([3]),
+            np.array(["bio"]), us,
+        )  # fmt: skip
+
+    m, rep = build(units)
+    assert m.responses.tolist() == [[1, 0]]
+    assert m.correct().tolist() == [[1.0, 0.0]] and rep.dropped_items_unmapped == 0
+    # a run listing the options in another order cannot be mapped: never guess the position
+    other = {"item_id": np.array([10]), "response": np.array([1]),
+             "opt_hash": np.array([[8, 7, 7]])}  # fmt: skip
+    _, rep = build([*units, ("C", other)])
+    assert rep.dropped_items_unmapped == 1
+    other["response"] = np.array([0])  # the option with its own hash still maps
+    m, rep = build([*units, ("C", other)])
+    assert m.responses.tolist() == [[1, 0, 2]] and rep.dropped_items_unmapped == 0
 
 
 def test_build_matrix_without_hashes() -> None:

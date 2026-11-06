@@ -195,6 +195,11 @@ def build_matrix(
     run's option text hashes). A run's response is mapped to the canonical option with the
     same text. Items on which any run's option set is not a permutation of the canonical set
     are dropped (if more than ``max_unmapped_share`` of runs disagree; default: any).
+
+    Text hashes are case-folded, so options that differ only by case share a hash (genotypes
+    such as "Bb Bb" and "bb Bb"). The hash cannot tell those options apart: a response on one
+    of them keeps its position when the run lists the options in canonical order, and
+    otherwise counts as unmapped.
     """
     rep = BuildReport(n_models_in=len(units), n_items_canonical=len(canonical_item_id))
     n_items, n_models = len(canonical_item_id), len(units)
@@ -224,7 +229,13 @@ def build_matrix(
                 bad_model += 1
                 continue
             hit = np.flatnonzero(can_h[:k_i] == run_h[r[t]])
-            resp[i, j] = int(hit[0])
+            if hit.size == 1:
+                resp[i, j] = int(hit[0])
+            elif np.array_equal(run_h[:k_i], can_h[:k_i]):
+                resp[i, j] = r[t]
+            else:
+                unmapped[i] += 1
+                bad_model += 1
         rep.per_model_unmapped[name] = bad_model
     drop = unmapped > max_unmapped_share * n_models
     rep.dropped_items_unmapped = int(drop.sum())
