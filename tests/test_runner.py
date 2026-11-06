@@ -163,6 +163,24 @@ def test_model_stages_offline_and_resume(tmp_path: Path) -> None:
     assert high["strongest"]["key"] + high["strongest"]["proposed"] <= 1.0
 
 
+def test_run_fails_loudly_on_failed_units_and_missing_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cfg_path = _config(tmp_path, **{'"gpqa", "bbh_ld3", "bbh_navigate", "bbh_object_counting"': ""})
+    assert main(["run", "--config", str(cfg_path), "--stages", "fit"]) == 3
+    assert "needs the build stage" in capsys.readouterr().err
+    cfg, store, _ = _seed_store(cfg_path)
+    assert main(["run", "--config", str(cfg_path), "--stages", "boot"]) == 3
+
+    def out_of_memory(**_: object) -> dict:
+        raise MemoryError
+
+    monkeypatch.setattr(runner, "boot_unit", out_of_memory)
+    with pytest.raises(RuntimeError, match="2 units failed"):  # exit 1: the wrapper retries
+        main(["run", "--config", str(cfg_path), "--stages", "fit,boot,validate"])
+    assert runner.status(cfg)["boot"][0] == 0 and not store.list_units("validate/")
+
+
 def test_config_change_refuses_resume(tmp_path: Path) -> None:
     cfg_path = _config(tmp_path)
     runner.open_store(load_config(cfg_path))

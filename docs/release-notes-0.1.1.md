@@ -1,4 +1,4 @@
-# keyaudit 0.1.1 (2026-10-30)
+# keyaudit 0.1.1 (prepared 2026-11-06)
 
 First release with the model-based study run. 0.1.0 (2026-10-24, never tagged) had the
 pipeline but only label-only results.
@@ -31,7 +31,7 @@ Details and limits are in [REPORT.md](../REPORT.md).
 ## Checks
 
 - Fast suite, `ruff check` and `ruff format --check` pass. The full suite with slow tests
-  (`pytest --runslow`, 189 tests) passed on 2026-11-06.
+  (`pytest --runslow`, 190 tests) passed on 2026-11-06.
 - Calibrated interval coverage on the real labeled design (`results/calibrated-cov-v1/`,
   1,000 replicates per cell, nominal 95%): 97.8-98.5% narrow, 94.1-95.5% broad with the
   residual floor; 87.5-92.1% and 92.6-93.5% without it (REPORT.md 3.1). Broad misses are
@@ -50,6 +50,9 @@ Details and limits are in [REPORT.md](../REPORT.md).
   to mix the new config's flags with validation units from the old one.
 - Invalid configs exit with code 2 and a message, and `scripts/run_study.py` does not retry
   them. `model.groups` accepts only `category`, the one value that is implemented.
+- `keyaudit run` stops with an error when a unit outside the per-model fetch still fails after
+  its retries, so `scripts/run_study.py` tries again; it used to exit 0 and leave a partial
+  run. A stage whose input stage has not run is refused (exit 3) instead of doing nothing.
 - `keyaudit report` writes `panel.json`: build counts and how the strongest models answer,
   which REPORT.md used to quote from uncommitted run units.
 - Lockfile: certifi 2026.10.19 (drops a compromised root CA), filelock 4.2.4, pillow 13.0.0

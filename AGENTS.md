@@ -222,7 +222,7 @@ only). Result: no error in the fixes; one tooling gap fixed. Details in REPORT 3
   replicates: 98% floored, 85% unfloored; fails with the floor removed).
 
 Checks (2026-10-30): `uv run pytest` (fast suite), `ruff check`, `ruff format --check` and
-`scripts/reference_values.py` pass. Long run `tmp/longrun-2026-10-30.sh` (same day): the full
+`scripts/reference_values.py` pass. In a long run the same day the full
 `pytest --runslow` passed (183 tests, about 7 min), and the 1,000-replicate coverage grid is
 committed in `results/calibrated-cov-v1/` (floored 97.8-98.5% narrow, 94.1-95.5% broad,
 misses one-sided with the upper limit holding in 95.2-96.1%; unfloored 87.5-92.1% and
@@ -237,9 +237,11 @@ chunks of `scripts/calibrated_coverage.py` matched their run units and the figur
   artefacts (REPORT 3.7, DESIGN 14 deviation 26; `results/study-v1/` predates the fix).
 - Fixed: `report` and `status` opened a run with another config; invalid configs gave a
   traceback and were retried; `model.groups` was ignored (deviation 27).
+- Fixed: `keyaudit run` exited 0 with failed units or a missing input stage, so the wrapper
+  never retried; now only per-model fetch units may fail (`runner._run_all`, `_check_inputs`).
 - Added: `panel.json` (numbers REPORT quoted from uncommitted units). Lock: certifi, filelock
   and pillow moved past published advisories (OSV shows none for the lock now). CI actions
   pinned to commits. sdist carries `results/` and `REPORT.md`; its tests pass.
-- Checks: `pytest --runslow` (189 tests), `ruff check`, `ruff format --check`, `uv lock --check`
+- Checks: `pytest --runslow` (190 tests), `ruff check`, `ruff format --check`, `uv lock --check`
   and `scripts/reference_values.py` pass. CI has not run on this branch (it runs on pull
   requests).

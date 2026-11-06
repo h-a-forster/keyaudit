@@ -18,3 +18,4 @@
 - Option hashes are case-sensitive (needs a re-fetch), which also recovers the GPQA item dropped by case-folding.
 - The Platinum MMLU high-school maths overlap is evaluated.
 - The source of the 9 GPQA duplicate-option items is known: GPQA itself or the harness.
+- `CHANGELOG.md` lists the 2026-11-06 fixes under 0.1.1 and carries the tag date, generated from the release notes.

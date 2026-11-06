@@ -54,6 +54,18 @@ def open_store(cfg: StudyConfig) -> UnitStore:
     return UnitStore(Path(cfg.study.out_dir), cfg.hash())
 
 
+def _run_all(store: UnitStore, units: list[Any], workers: int = 1, retries: int = 2) -> None:
+    """:func:`run_units` for a stage that needs every unit: a failed one stops the run.
+
+    The error exits non-zero, so ``scripts/run_study.py`` tries again. Only the per-model fetch
+    units may fail: such a model is replaced, and ``build`` counts the readable ones.
+    """
+    st = run_units(store, units, workers=workers, retries=retries)
+    failed = [u for u, v in st.items() if v != "ok"]
+    if failed:
+        raise RuntimeError(f"{len(failed)} units failed: {failed[:5]}; see progress.log")
+
+
 def _fit_kwargs(cfg: StudyConfig, tau: float | None = None) -> dict[str, Any]:
     t = None if cfg.model.tau == "auto" else float(cfg.model.tau)
     return {
@@ -126,7 +138,7 @@ def stage_fetch(cfg: StudyConfig, store: UnitStore, workers: int) -> dict[str, A
         "platinum_revision": d.platinum_revision,
         "contents_revision": p.contents_revision,
     }
-    run_units(store, [("fetch/sources", fetch_sources_unit, {"cfg_dict": src})], workers=1)
+    _run_all(store, [("fetch/sources", fetch_sources_unit, {"cfg_dict": src})])
     contents = leaderboard.load_contents(p.contents_revision, d.cache_dir)
     panel, excluded = leaderboard.select_panel(
         contents,
@@ -432,7 +444,7 @@ def stage_labels(cfg: StudyConfig, store: UnitStore) -> None:
         "canonical": canonical,
         "conf": cfg.uncertainty.conf,
     }
-    run_units(store, [(uid, labels_unit, {"cfg_dict": payload})], workers=1)
+    _run_all(store, [(uid, labels_unit, {"cfg_dict": payload})])
 
 
 def labels_uid(store: UnitStore) -> str | None:
@@ -677,7 +689,7 @@ def stage_fit(cfg: StudyConfig, store: UnitStore, workers: int) -> None:
         _, arrays, _ = load_matrix(store, b)
         units.append((f"fit/{b}", fit_unit, {"arrays": arrays, "benchmark": b,
                                               "fit_kwargs": _fit_kwargs(cfg)}))  # fmt: skip
-    run_units(store, units, workers=workers, retries=cfg.run.retries)
+    _run_all(store, units, workers, cfg.run.retries)
 
 
 def _fitted_tau(store: UnitStore, b: str) -> float:
@@ -698,7 +710,7 @@ def stage_boot(cfg: StudyConfig, store: UnitStore, workers: int) -> None:
             units.append((f"boot/{b}/{start:05d}", boot_unit,
                           {"arrays": arrays, "benchmark": b, "reps": reps, "seed": seed,
                            "fit_kwargs": kw, "kappa0": cfg.model.kappa0}))  # fmt: skip
-    run_units(store, units, workers=workers, retries=cfg.run.retries)
+    _run_all(store, units, workers, cfg.run.retries)
 
 
 def stage_lofo(cfg: StudyConfig, store: UnitStore, workers: int) -> None:
@@ -714,7 +726,7 @@ def stage_lofo(cfg: StudyConfig, store: UnitStore, workers: int) -> None:
             units.append((f"lofo/{b}/{f:03d}", lofo_unit,
                           {"arrays": arrays, "benchmark": b, "family": f, "fit_kwargs": kw,
                            "alpha": cfg.uncertainty.fdr_alpha}))  # fmt: skip
-    run_units(store, units, workers=workers, retries=cfg.run.retries)
+    _run_all(store, units, workers, cfg.run.retries)
 
 
 def _redux_ok_mask(store: UnitStore, item_id: Any) -> Any:
@@ -745,7 +757,7 @@ def stage_planted(cfg: StudyConfig, store: UnitStore, workers: int) -> None:
           "kappa0": cfg.model.kappa0})
         for mode in PLANTED_MODES for rep in range(u.planted_reps)
     ]  # fmt: skip
-    run_units(store, units, workers=workers, retries=cfg.run.retries)
+    _run_all(store, units, workers, cfg.run.retries)
 
 
 def _mmlu_pro_validation(
@@ -887,12 +899,21 @@ def stage_validate(cfg: StudyConfig, store: UnitStore) -> None:
 # ---------------------------------------------------------------------------------------------
 
 
+def _check_inputs(cfg: StudyConfig, store: UnitStore, stage: str) -> None:
+    """Refuse a model stage whose input stage has produced nothing: it would do no work."""
+    need = "build" if stage == "fit" else "fit"
+    if not any(store.status(f"{need}/{b}") == "ok" for b in cfg.study.benchmarks):
+        raise PreconditionFailed(f"stage {stage} needs the {need} stage, which has not run")
+
+
 def run_study(cfg: StudyConfig, stages: tuple[str, ...] = STAGES, workers: int = 3) -> None:
     """Run (or resume) the requested stages of a study, in canonical order."""
     store = open_store(cfg)
     order = [s for s in STAGES if s in stages]
     store.log(f"run: stages={','.join(order)} workers={workers}")
     for stage in order:
+        if stage in STAGES[STAGES.index("fit") :]:
+            _check_inputs(cfg, store, stage)
         store.log(f"stage {stage}: start")
         if stage == "fetch":
             stage_fetch(cfg, store, workers)
