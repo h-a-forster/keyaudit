@@ -1,0 +1,355 @@
+{
+  "mmlu_pro": {
+    "items": 12027,
+    "models": 96,
+    "build": {
+      "n_models_in": 99,
+      "n_items_canonical": 12032,
+      "dropped_items_unmapped": 5,
+      "invalid_responses": 0,
+      "missing_responses": 0
+    },
+    "canonical_dropped": null,
+    "gate_failed": [
+      [
+        "fblgit__TheBeagle-v2beta-32B-MGS",
+        7117,
+        0.5910904255319149
+      ]
+    ],
+    "dedupe_dropped": [
+      [
+        "MaziyarPanahi__calme-2.4-rys-78b",
+        "dfurman__CalmeRys-78B-Orpo-v0.1",
+        0.9920179595909204
+      ],
+      [
+        "dfurman__Qwen2-72B-Orpo-v0.1",
+        "abacusai__Dracarys-72B-Instruct",
+        0.9512762950029101
+      ],
+      [
+        "prithivMLmods__Pegasus-Opus-14B-Exp",
+        "prithivMLmods__Primal-Opus-14B-Optimus-v2",
+        0.9518583187827389
+      ]
+    ],
+    "accuracy": {
+      "median": 0.3703749896067182,
+      "best": 0.7007566309137774
+    },
+    "families": {
+      "n": 34,
+      "largest": 44
+    },
+    "strongest": {
+      "n": 10,
+      "models": [
+        "newsbang__Homer-v1.0-Qwen2.5-72B",
+        "dfurman__CalmeRys-78B-Orpo-v0.1",
+        "rombodawg__Rombos-LLM-V2.5-Qwen-32b",
+        "fluently-lm__FluentlyLM-Prinum",
+        "Qwen__Qwen2.5-32B",
+        "Qwen__Qwen2.5-72B",
+        "prithivMLmods__Galactic-Qwen-14B-Exp2",
+        "Daemontatox__PathFinderAi3.0",
+        "raphgg__test-2.5-72B",
+        "rubenroy__Gilgamesh-72B"
+      ],
+      "mean_accuracy": 0.5971647127296915,
+      "mean_pairwise_agreement": 0.6801548368023798,
+      "all_in_largest_family": true
+    },
+    "choices": {
+      "posterior_above_half": {
+        "n_items": 2994,
+        "strongest": {
+          "key": 0.10146960587842352,
+          "proposed": 0.6105210420841684
+        },
+        "weakest_30": {
+          "key": 0.10743709641505232,
+          "proposed": 0.1769093743041639
+        }
+      },
+      "flagged": {
+        "n_items": 2953,
+        "strongest": {
+          "key": 0.10013545546901456,
+          "proposed": 0.6131053166271588
+        },
+        "weakest_30": {
+          "key": 0.10640027091093802,
+          "proposed": 0.17704029800203183
+        }
+      }
+    }
+  },
+  "gpqa": {
+    "items": 536,
+    "models": 95,
+    "build": {
+      "n_models_in": 95,
+      "n_items_canonical": 536,
+      "dropped_items_unmapped": 0,
+      "invalid_responses": 0,
+      "missing_responses": 0
+    },
+    "canonical_dropped": {
+      "duplicate_options": 10,
+      "inconsistent_options": 0,
+      "inconsistent_key": 0
+    },
+    "gate_failed": [],
+    "dedupe_dropped": [],
+    "accuracy": {
+      "median": 0.30597014925373134,
+      "best": 0.44029850746268656
+    },
+    "families": {
+      "n": 34,
+      "largest": 43
+    },
+    "strongest": {
+      "n": 10,
+      "models": [
+        "prithivMLmods__Sombrero-Opus-14B-Sm5",
+        "prithivMLmods__Primal-Opus-14B-Optimus-v2",
+        "prithivMLmods__Gaea-Opus-14B-Exp",
+        "prithivMLmods__Messier-Opus-14B-Elite7",
+        "prithivMLmods__Megatron-Opus-14B-Exp",
+        "prithivMLmods__Galactic-Qwen-14B-Exp2",
+        "CultriX__SeQwence-14B",
+        "newsbang__Homer-v1.0-Qwen2.5-72B",
+        "lars1234__Mistral-Small-24B-Instruct-2501-writer",
+        "arcee-ai__Arcee-Nova"
+      ],
+      "mean_accuracy": 0.3914179104477612,
+      "mean_pairwise_agreement": 0.6532752902155887,
+      "all_in_largest_family": true
+    },
+    "choices": {
+      "posterior_above_half": {
+        "n_items": 302,
+        "strongest": {
+          "key": 0.0956953642384106,
+          "proposed": 0.7559602649006623
+        },
+        "weakest_30": {
+          "key": 0.23885209713024283,
+          "proposed": 0.2764900662251656
+        }
+      },
+      "flagged": {
+        "n_items": 302,
+        "strongest": {
+          "key": 0.0956953642384106,
+          "proposed": 0.7559602649006623
+        },
+        "weakest_30": {
+          "key": 0.23885209713024283,
+          "proposed": 0.2764900662251656
+        }
+      }
+    }
+  },
+  "bbh_ld3": {
+    "items": 250,
+    "models": 96,
+    "build": {
+      "n_models_in": 96,
+      "n_items_canonical": 250,
+      "dropped_items_unmapped": 0,
+      "invalid_responses": 0,
+      "missing_responses": 0
+    },
+    "canonical_dropped": null,
+    "gate_failed": [],
+    "dedupe_dropped": [],
+    "accuracy": {
+      "median": 0.708,
+      "best": 0.972
+    },
+    "families": {
+      "n": 34,
+      "largest": 44
+    },
+    "strongest": {
+      "n": 10,
+      "models": [
+        "prithivMLmods__Galactic-Qwen-14B-Exp2",
+        "rombodawg__Rombos-LLM-V2.5-Qwen-32b",
+        "fluently-lm__FluentlyLM-Prinum",
+        "prithivMLmods__Megatron-Opus-14B-Exp",
+        "CultriX__SeQwence-14B",
+        "Daemontatox__PathFinderAi3.0",
+        "prithivMLmods__Messier-Opus-14B-Elite7",
+        "prithivMLmods__Sombrero-Opus-14B-Sm5",
+        "prithivMLmods__Primal-Opus-14B-Optimus-v2",
+        "mistralai__Mistral-Large-Instruct-2411"
+      ],
+      "mean_accuracy": 0.9396000000000001,
+      "mean_pairwise_agreement": 0.9309333333333331,
+      "all_in_largest_family": true
+    },
+    "choices": {
+      "posterior_above_half": {
+        "n_items": 1,
+        "strongest": {
+          "key": 0.0,
+          "proposed": 1.0
+        },
+        "weakest_30": {
+          "key": 0.06666666666666667,
+          "proposed": 0.26666666666666666
+        }
+      },
+      "flagged": {
+        "n_items": 1,
+        "strongest": {
+          "key": 0.0,
+          "proposed": 1.0
+        },
+        "weakest_30": {
+          "key": 0.06666666666666667,
+          "proposed": 0.26666666666666666
+        }
+      }
+    }
+  },
+  "bbh_navigate": {
+    "items": 250,
+    "models": 96,
+    "build": {
+      "n_models_in": 96,
+      "n_items_canonical": 250,
+      "dropped_items_unmapped": 0,
+      "invalid_responses": 0,
+      "missing_responses": 0
+    },
+    "canonical_dropped": null,
+    "gate_failed": [],
+    "dedupe_dropped": [],
+    "accuracy": {
+      "median": 0.646,
+      "best": 0.872
+    },
+    "families": {
+      "n": 34,
+      "largest": 44
+    },
+    "strongest": {
+      "n": 10,
+      "models": [
+        "newsbang__Homer-v1.0-Qwen2.5-72B",
+        "fluently-lm__FluentlyLM-Prinum",
+        "Qwen__Qwen2.5-72B-Instruct",
+        "raphgg__test-2.5-72B",
+        "nisten__franqwenstein-35b",
+        "rombodawg__Rombos-LLM-V2.5-Qwen-32b",
+        "prithivMLmods__Primal-Opus-14B-Optimus-v2",
+        "rubenroy__Gilgamesh-72B",
+        "prithivMLmods__Messier-Opus-14B-Elite7",
+        "Daemontatox__PathFinderAi3.0"
+      ],
+      "mean_accuracy": 0.7956,
+      "mean_pairwise_agreement": 0.8822222222222221,
+      "all_in_largest_family": true
+    },
+    "choices": {
+      "posterior_above_half": {
+        "n_items": 24,
+        "strongest": {
+          "key": 0.0875,
+          "proposed": 0.9125
+        },
+        "weakest_30": {
+          "key": 0.7263888888888889,
+          "proposed": 0.27361111111111114
+        }
+      },
+      "flagged": {
+        "n_items": 1,
+        "strongest": {
+          "key": 0.0,
+          "proposed": 1.0
+        },
+        "weakest_30": {
+          "key": 0.5333333333333333,
+          "proposed": 0.4666666666666667
+        }
+      }
+    }
+  },
+  "bbh_object_counting": {
+    "items": 250,
+    "models": 96,
+    "build": {
+      "n_models_in": 96,
+      "n_items_canonical": 250,
+      "dropped_items_unmapped": 0,
+      "invalid_responses": 0,
+      "missing_responses": 0
+    },
+    "canonical_dropped": null,
+    "gate_failed": [],
+    "dedupe_dropped": [],
+    "accuracy": {
+      "median": 0.406,
+      "best": 0.624
+    },
+    "families": {
+      "n": 34,
+      "largest": 44
+    },
+    "strongest": {
+      "n": 10,
+      "models": [
+        "abacusai__Dracarys-72B-Instruct",
+        "Qwen__Qwen2.5-72B-Instruct",
+        "newsbang__Homer-v1.0-Qwen2.5-72B",
+        "Qwen__Qwen2.5-72B",
+        "raphgg__test-2.5-72B",
+        "rubenroy__Gilgamesh-72B",
+        "dfurman__CalmeRys-78B-Orpo-v0.1",
+        "pankajmathur__orca_mini_v7_72b",
+        "LightningRodLabs__Flashlight-v1.1",
+        "cognitivecomputations__dolphin-2.9.2-qwen2-72b"
+      ],
+      "mean_accuracy": 0.562,
+      "mean_pairwise_agreement": 0.6548444444444445,
+      "all_in_largest_family": true
+    },
+    "choices": {
+      "posterior_above_half": {
+        "n_items": 18,
+        "strongest": {
+          "key": 0.10555555555555556,
+          "proposed": 0.5833333333333334
+        },
+        "weakest_30": {
+          "key": 0.10740740740740741,
+          "proposed": 0.24814814814814815
+        }
+      },
+      "flagged": {
+        "n_items": 6,
+        "strongest": {
+          "key": 0.11666666666666667,
+          "proposed": 0.5833333333333334
+        },
+        "weakest_30": {
+          "key": 0.16111111111111112,
+          "proposed": 0.09444444444444444
+        }
+      }
+    }
+  },
+  "key_revision_votes": {
+    "241199e1d7a6b280ed13e61c11a40841cbb58c89": 9,
+    "7db2dc66c66870201e1cf041a3a9297a7674c50a": 10,
+    "73713573382960a0c4288f612ce409427e5e76ff": 29,
+    "014c8cf520218fc7f1ecec95c691a83ae5b8ba14": 43,
+    "55abfa5a89bcc5cbe8774e720951a10ffc580d16": 9
+  }
+}

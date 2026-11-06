@@ -156,6 +156,11 @@ def test_model_stages_offline_and_resume(tmp_path: Path) -> None:
     rows = (out / "suspects.csv").read_text(encoding="utf-8").splitlines()
     assert rows[0].startswith("benchmark,item_id") and len(rows) > 1
     assert "## Model-based results" in (out / "tables.md").read_text(encoding="utf-8")
+    pan = json.loads((out / "panel.json").read_text(encoding="utf-8"))["mmlu_pro"]
+    assert pan["models"] == sp.matrix.shape[1] and pan["strongest"]["n"] == 10
+    high = pan["choices"]["posterior_above_half"]
+    assert high["n_items"] == int((store.load("fit/mmlu_pro")[0]["p_miskey"] > 0.5).sum())
+    assert high["strongest"]["key"] + high["strongest"]["proposed"] <= 1.0
 
 
 def test_config_change_refuses_resume(tmp_path: Path) -> None:

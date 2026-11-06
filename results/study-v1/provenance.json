@@ -191,7 +191,7 @@
     }
   ],
   "library_versions": {
-    "keyaudit": "0.1.0",
+    "keyaudit": "0.1.1",
     "numpy": "2.4.6",
     "scipy": "1.18.1",
     "pyarrow": "26.0.0",

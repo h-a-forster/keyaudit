@@ -4,10 +4,10 @@ Writes ``results/<study>/``: ``provenance.json`` (versions, revisions, config ha
 sizes, wall times, access summary), ``labels.json`` (label-only estimates that need no
 panel), ``access.csv`` (every details repository tried and its status), and, when the model
 stages have run, ``estimates.json`` (model-based, label-calibrated and transfer rates with
-intervals and bounds), ``validation.json`` and ``suspects.csv`` (ranked items: benchmark, item
-id, key, proposed option, posterior, q-value, competence, family stability; GPQA and BBH
-items appear only as hashed ids). ``tables.md`` summarises everything. Read-only with respect
-to the run directory.
+intervals and bounds), ``panel.json`` (build counts and how the strongest models answer),
+``validation.json`` and ``suspects.csv`` (ranked items: benchmark, item id, key, proposed
+option, posterior, q-value, competence, family stability; GPQA and BBH items appear only as
+hashed ids). ``tables.md`` summarises everything. Read-only with respect to the run directory.
 """
 
 from __future__ import annotations
@@ -214,6 +214,62 @@ def _subset_flag_rate(
     }
 
 
+def _choice_shares(
+    m: Any, sel: np.ndarray, proposed: np.ndarray, models: np.ndarray
+) -> dict[str, float]:
+    """Share of the responses of ``models`` on items ``sel`` that are the key or the proposal."""
+    r = m.responses[np.ix_(sel, models)]
+    obs = r >= 0
+    n = max(1, int(obs.sum()))
+    return {
+        "key": float(((r == m.key[sel, None]) & obs).sum() / n),
+        "proposed": float(((r == proposed[sel, None]) & obs).sum() / n),
+    }
+
+
+def _panel_facts(
+    m: Any, ba: dict[str, Any], bmeta: dict[str, Any], fa: dict[str, Any], flagged: np.ndarray,
+    n_top: int = 10, n_weak: int = 30,
+) -> dict[str, Any]:  # fmt: skip
+    """Build counts and how the strongest and weakest models (by fitted ability) answer."""
+    from keyaudit.matrix import agreement_matrix
+
+    s, proposed = np.asarray(fa["p_miskey"]), np.asarray(fa["proposed"])
+    order = np.argsort(-np.asarray(fa["theta"]), kind="stable")
+    top, weak = order[:n_top], order[-n_weak:]
+    acc = np.nanmean(m.correct(), axis=0)
+    fam = np.asarray(ba["family"])
+    labels, sizes = np.unique(fam, return_counts=True)
+    largest = labels[sizes.argmax()]
+    agree = agreement_matrix(m.responses[:, top])[0]
+    groups = {"posterior_above_half": np.flatnonzero(s > 0.5), "flagged": np.flatnonzero(flagged)}
+    return {
+        "items": m.shape[0],
+        "models": m.shape[1],
+        "build": {k: v for k, v in bmeta["report"].items() if k != "per_model_unmapped"},
+        "canonical_dropped": bmeta.get("canonical_dropped"),
+        "gate_failed": bmeta.get("gate_failed", []),
+        "dedupe_dropped": bmeta.get("dedupe_dropped", []),
+        "accuracy": {"median": float(np.median(acc)), "best": float(acc.max())},
+        "families": {"n": int(labels.size), "largest": int(sizes.max())},
+        "strongest": {
+            "n": int(top.size),
+            "models": [m.models[j] for j in top],
+            "mean_accuracy": float(acc[top].mean()),
+            "mean_pairwise_agreement": float(agree[np.triu_indices(top.size, 1)].mean()),
+            "all_in_largest_family": bool(np.all(fam[top] == largest)),
+        },
+        "choices": {
+            name: {
+                "n_items": int(sel.size),
+                "strongest": _choice_shares(m, sel, proposed, top),
+                f"weakest_{n_weak}": _choice_shares(m, sel, proposed, weak),
+            }
+            for name, sel in groups.items()
+        },
+    }
+
+
 def _model_results(
     cfg: StudyConfig, store: UnitStore, out: Path, lab_arrays: dict[str, Any] | None
 ) -> list[str]:
@@ -224,6 +280,7 @@ def _model_results(
 
     lines: list[str] = []
     estimates: dict[str, Any] = {}
+    panel: dict[str, Any] = {}
     validation: dict[str, Any] = {}
     suspects: list[dict[str, Any]] = []
     conf = cfg.uncertainty.conf
@@ -310,6 +367,7 @@ def _model_results(
                     "transfer": transfer,
                 }  # fmt: skip
         estimates[b] = est
+        panel[b] = _panel_facts(m, ba, bmeta, fa, flagged)
         if store.status(f"validate/{b}") == "ok":
             validation[b] = store.load(f"validate/{b}")[1]
         lofo = [np.asarray(store.load(u)[0]["flags"]) for u in store.list_units(f"lofo/{b}/")]
@@ -359,6 +417,9 @@ def _model_results(
         ]
     if estimates:
         _json(out / "estimates.json", estimates)
+        if store.status("build/canonical") == "ok":
+            panel["key_revision_votes"] = store.load("build/canonical")[1]["votes"]
+        _json(out / "panel.json", panel)
         _json(out / "validation.json", validation)
         with (out / "suspects.csv").open("w", encoding="utf-8", newline="") as fh:
             fields = ["benchmark", "item_id", "group", "key", "proposed", "p_miskey", "q_value",
