@@ -310,13 +310,13 @@ posterior with models as annotators.
    section 14, deviation 21). Also reported: the classical stratified estimate (f = 0),
    the variance ratio, and a stratified bootstrap interval as a check on the normal
    approximation (positives are rare). Implemented in `stats.stratified_difference_estimate`.
-2. **Model-based rate** `E_model(g)` with pigeonhole bootstrap intervals (Owen 2007): each
-   replicate resamples items and models independently with replacement and refits; 95%
-   percentile intervals; B from the config.
+2. **Model-based rate** `E_model(g)` with an item bootstrap, panel fixed (the plan was a
+   pigeonhole bootstrap, Owen 2007; see section 14, deviation 20): each replicate resamples
+   items with replacement and refits; 95% percentile intervals; B from the config.
 3. **Transfer estimate** for `stemez`, `theoremQA`, `scibench` (no labels): mean calibrated
-   score; the interval combines the pigeonhole bootstrap with a bootstrap of the calibration
-   fit over L. Reported as an extrapolation that assumes the calibration transfers across
-   sources.
+   score; the interval bootstraps the calibration fit over L only (the score uncertainty
+   of the plan's pigeonhole bootstrap is not included). Reported as an extrapolation that
+   assumes the calibration transfers across sources.
 4. **Bounds**: section 5.3.
 
 ### 6.8 Multiplicity and intervals (`stats`, implemented at scaffold)
@@ -643,7 +643,8 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
 
 20. **Bootstrap over items, panel fixed (after the M5 runs).** In a pigeonhole replicate a
     model drawn twice counts as two independent confirmations of the same answer, so the
-    refitted rate is inflated (about 2-3x on a 1000 x 60 panel; regression test
+    refitted rate is inflated several-fold (median interval midpoint 13.3% for a rate near
+    3% on 1000 x 60 panels, REPORT 4.3; regression test
     `test_item_bootstrap_not_inflated_but_pigeonhole_is`). The default is now items only,
     conditional on the panel (`resample_models=False`); intervals no longer reflect panel
     sampling. The coverage units in `results/simulation-v1/` were computed before this change
@@ -697,3 +698,15 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     uninformative, study-like and twice as informative scores; broad misses are one-sided
     (upper limit holds in 95.2-96.1% of replicates). The seeded slow test (200
     replicates, uninformative scores) gives 98% floored, 85% unfloored.
+26. **Options that share a text hash (found 2026-11-06).** Text hashes are case-folded
+    (deviation 5), so MMLU-Pro options that differ only by case share a hash: 18 items at
+    `014c8cf5`, for example genotypes such as "Bb Bb" and "bb Bb". `build_matrix` sent every
+    response on such an option to the first one, so a key on a later one looked unchosen
+    and the adapter gate, which runs before the mapping, could not see it. Now such a
+    response keeps its position when the run lists the options in canonical order and
+    counts as unmapped otherwise. Effect on study-v1, which predates the fix:
+    `results/option-mapping-check/summary.json` (REPORT 3.7). A case-sensitive hash would
+    be cleaner but needs a re-fetch.
+27. **`model.groups` is `category` only.** Section 1 allows other reporting groups, but
+    `build` only implements MMLU-Pro categories, so the config now refuses other values
+    instead of ignoring them.

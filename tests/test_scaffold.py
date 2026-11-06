@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import re
 from pathlib import Path
 
 import pytest
@@ -38,6 +39,11 @@ MODULES = [
 @pytest.mark.parametrize("name", MODULES)
 def test_modules_import(name: str) -> None:
     importlib.import_module(name)
+
+
+def test_ci_actions_are_pinned_to_commits() -> None:
+    uses = re.findall(r"uses:\s*(\S+)", (ROOT / ".github/workflows/ci.yml").read_text("utf-8"))
+    assert uses and all(re.fullmatch(r"[\w./-]+@[0-9a-f]{40}", u) for u in uses)
 
 
 def test_version_is_a_string() -> None:

@@ -54,7 +54,8 @@ to the benchmark's maintainers.
 ## Pull requests
 
 - One change per pull request, with tests and docs.
-- Add an entry under "Unreleased" in [CHANGELOG.md](CHANGELOG.md) for user-visible changes.
-- Keep the "Status and next steps" section of [AGENTS.md](AGENTS.md) current.
+- Put user-visible changes in `docs/release-notes-<version>.md`; do not hand-edit
+  [CHANGELOG.md](CHANGELOG.md).
+- Keep [backlog.md](backlog.md) and the status in [AGENTS.md](AGENTS.md) current.
 
 Security issues: see [SECURITY.md](SECURITY.md). Do not open a public issue.

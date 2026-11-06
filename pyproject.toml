@@ -57,17 +57,19 @@ keyaudit = "keyaudit.cli:main"
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [tool.uv]
-# Resolve only releases at least two weeks old at scaffold time (reproducible lock, no
-# day-old releases). Move the date forward deliberately when upgrading.
-exclude-newer = "2026-10-10T00:00:00Z"
+# Resolve only releases at least two weeks old (reproducible lock, no day-old releases).
+# Move the date forward deliberately when upgrading; it last moved for security fixes in
+# certifi, filelock and pillow.
+exclude-newer = "2026-10-23T00:00:00Z"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/keyaudit"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/keyaudit", "tests", "docs", "configs", "scripts", "README.md", "LICENSE",
-    "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "CITATION.cff",
+    "src/keyaudit", "tests", "docs", "configs", "scripts", "results", "README.md", "REPORT.md",
+    "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "CITATION.cff",
+    ".github/workflows/ci.yml",
 ]
 
 [tool.pytest.ini_options]

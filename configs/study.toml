@@ -1,7 +1,5 @@
-# Default study, sized to finish in under 45 minutes of wall time on 3 worker processes.
-# Projection (to be replaced by measurements at M2/M5): fetch ~100 models x 5 tasks with
-# column projection, ~0.3-0.5 GB, 10-15 min; fits, 200 item bootstrap replicates,
-# 5 leave-one-family-out refits and 20 planted-key replicates, 10-15 min.
+# Default study. Measured on 3 worker processes: about 2 hours of wall time, mostly the
+# MMLU-Pro bootstrap (REPORT.md section 1).
 # Needs an HF token whose account has accepted the conditions of each details repository.
 
 [study]

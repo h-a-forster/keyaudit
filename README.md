@@ -14,9 +14,9 @@ implemented and tested, and the study has been run on 96 Open LLM Leaderboard mo
 (MMLU-Pro, GPQA and three BBH tasks). Results are in [REPORT.md](REPORT.md). In short: about
 1.4% of MMLU-Pro's MMLU-derived items have a wrong key by the human-label-calibrated
 estimate, while the model panel alone suggests 22-25%, because the strongest leaderboard
-models share the same wrong answers. An independent audit (2026-10-24) found eight issues,
-all addressed; a re-audit (2026-10-30) of the last fixes and of the changes made during the
-model run reproduced their numbers (REPORT.md 3.7).
+models share the same wrong answers. An automated audit in a separate session (2026-10-24)
+found eight issues, all addressed; a re-audit (2026-10-30) of the last fixes and of the
+changes made during the model run reproduced their numbers (REPORT.md 3.7).
 
 ## Why
 
@@ -73,7 +73,7 @@ uv run keyaudit versions
 uv run keyaudit check-config --config configs/study.toml
 
 # Simulation study (no data needed): the quick profile takes about 15 seconds
-uv run keyaudit simulate --profile quick --out runs/sim-quick --results results/sim-quick
+uv run keyaudit simulate --profile quick --out runs/sim-quick --results runs/sim-quick/results
 
 # Real study: fetch sources, label-only estimates, then the model stages
 uv run python scripts/run_study.py --config configs/study.toml   # resumes after failures
@@ -132,6 +132,9 @@ the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94
   of 26) stand out (Holm p < 0.001 over 56 subjects).
 - **GPQA data note.** In the leaderboard's GPQA details, 9 of 546 items show duplicate
   options to every model (4 with four identical options).
+- **Known artefact.** Four of the 2,953 flagged MMLU-Pro items in `results/study-v1/` come
+  from a mapping bug fixed after the study (REPORT.md 3.7). The label-calibrated rates and
+  the narrow ranking metrics above do not change at the precision shown.
 
 On synthetic panels where its assumptions hold, the model recovers planted mis-keys well
 (AP 0.87-0.95, `results/simulation-v1/`); the real panel is far more correlated than those
@@ -172,7 +175,7 @@ or stores the token, and it never writes GPQA question text to any output.
 - [docs/DESIGN.md](docs/DESIGN.md): estimands, model, identifiability, validation plan and
   every deviation found during implementation (section 14).
 - [REPORT.md](REPORT.md): what was run, the results, and their limits.
-- [AGENTS.md](AGENTS.md): status and next steps.
+- [AGENTS.md](AGENTS.md): status and conventions; [backlog.md](backlog.md): open work.
 
 ## Citation
 

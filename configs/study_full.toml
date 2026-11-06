@@ -1,6 +1,7 @@
 # Full-size study: up to 300 panel models, 1000 bootstrap replicates, 10 leave-one-family-out
-# refits, 100 planted-key replicates. Projected 2-3 h wall on 3 workers and ~1-1.5 GB of
-# downloads (a projection, not a measurement). Resumes from runs/study-full/units/.
+# refits, 100 planted-key replicates. Never run. Scaling study-v1 (about 44 s per MMLU-Pro
+# refit on 96 models) gives over 10 hours on 3 workers for the bootstrap alone, and about
+# 1-1.5 GB of downloads. Resumes from runs/study-full/units/.
 # Needs an HF token whose account has accepted the conditions of each details repository.
 
 [study]

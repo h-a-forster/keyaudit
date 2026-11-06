@@ -4,8 +4,7 @@
    on the panel (model refitted, full-sample ``tau`` kept). The pigeonhole bootstrap (items
    and models resampled; Owen 2007) is available with ``resample_models=True`` but is not
    the default: duplicated models in a replicate count as independent confirmations of the
-   same answer and inflate the rate (about 2-3x on a 1000 x 60 panel; docs/DESIGN.md
-   section 14, deviation 20).
+   same answer and inflate the rate several-fold (docs/DESIGN.md section 14, deviation 20).
 2. Label-calibrated (headline where labels exist): the stratified difference estimator of
    :func:`keyaudit.stats.stratified_difference_estimate` with cross-fitted Platt-calibrated
    scores ``f_i`` on the population (fold maps for labeled items, their average elsewhere)

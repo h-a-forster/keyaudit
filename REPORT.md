@@ -1,9 +1,11 @@
 # keyaudit report (v0.1.1)
 
-Date: 2026-10-24 (study); re-audit notes 2026-10-30. Every number here comes from committed
-result sets, except where section 3.7 says otherwise: `results/study-v1/` (the real study,
-all stages) and `results/simulation-v1/`, `results/items-cov-v1/`, `results/items-cov-v2/`
-(synthetic panels with known truth). Estimands and methods are defined in
+Date: 2026-10-24 (study); re-audit notes 2026-10-30; option-mapping note 2026-11-06. Every
+number here comes from committed result sets, except the wall times (run logs) and where
+sections 3.6 and 3.7 say otherwise: `results/study-v1/` (the real study, all stages),
+`results/simulation-v1/`, `results/items-cov-v1/`, `results/items-cov-v2/`,
+`results/calibrated-cov-v1/` (simulations with known truth) and
+`results/option-mapping-check/`. Estimands and methods are defined in
 [docs/DESIGN.md](docs/DESIGN.md); deviations are listed in DESIGN section 14. Figures are
 drawn from `results/` by `scripts/make_figures.py`.
 
@@ -49,9 +51,12 @@ drawn from `results/` by `scripts/make_figures.py`.
 - On synthetic panels (section 4) the model ranks planted mis-keys well when its
   assumptions hold (AP 0.95), and the calibrated estimator stays within 0.3 points of the
   truth in every scenario, including the trick-item scenario that mimics the real data.
-- An independent audit (2026-10-24) found eight issues, all addressed. A re-audit
-  (2026-10-30) of the fixes for findings 5 and 6 and of the model-run changes reproduced
-  their numbers and found no error in them (section 3.7).
+- **Known artefact.** Four of the 2,953 flagged MMLU-Pro items are mapping artefacts from a
+  bug fixed after the study (section 3.7). Fixing it leaves the label-calibrated rates and
+  intervals unchanged at two decimals and moves the model-only rates by at most 0.04 points.
+- An automated audit in a separate session (2026-10-24) found eight issues, all addressed.
+  A re-audit (2026-10-30) of the fixes for findings 5 and 6 and of the model-run changes
+  reproduced their numbers and found no error in them (section 3.7).
 
 ![MMLU-Pro, same items: human-label key-error rate vs model-only flag rate](docs/figures/error_rate_gap.png)
 
@@ -63,7 +68,7 @@ drawn from `results/` by `scripts/make_figures.py`.
 | Seed | 20261024 | 20261024 |
 | Units | fetch 500, labels 1, build 6, fit 5, boot 100, lofo 25, planted 40, validate 5 (all ok) | 70/70 (40 scenario panels, 30 coverage panels) |
 | Wall time | about 2 h: fetch 23 min plus a 5 min GPQA re-fetch (1 worker), build 10 min, fit 1 min, bootstrap 52 min, planted keys 20 min, the rest 2 min (3 workers) | 38.6 min on 3 workers |
-| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix) | keyaudit 0.1.0.dev0 (M5) |
+| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix); `build` predates the option-mapping fix of section 3.7 | keyaudit 0.1.0.dev0 (M5) |
 
 The configuration projected 20-30 minutes; the MMLU-Pro bootstrap (200 refits of a
 12,027 x 96 matrix, about 44 s each) dominated. `results/study-v1/provenance.json` records
@@ -74,7 +79,7 @@ huggingface-hub 2.2.0).
 replacement): 100 readable, 1 failed (HTTP 400, no parquet conversion for its MMLU-Pro
 details). One GPQA unit also failed with HTTP 400 (`prithivMLmods/WebMind-7B-v0.1`).
 
-**Matrices** (`build`; counts from the build units, summarised in `tables.md`):
+**Matrices** (`build`; counts in `results/study-v1/panel.json`, like the panel facts below):
 
 | Benchmark | Items | Models | Dropped |
 |---|---|---|---|
@@ -344,8 +349,10 @@ overlap with Platinum (3 rejected items) was not evaluated.
 
 `results/study-v1/suspects.csv` lists the 3,263 items flagged at q <= 0.10 (2,953 MMLU-Pro,
 302 GPQA, 8 BBH) with key, proposed option, posterior, q-value, competence and LOFO
-stability. GPQA and BBH items appear only as hashed ids. Given section 3.2, a flag is a
-reason to look at an item, not evidence that its key is wrong.
+stability. GPQA and BBH items appear only as hashed ids, and GPQA letters index the options
+in hash order, not the published A-D. Given section 3.2, a flag is a reason to look at an
+item, not evidence that its key is wrong. Items 2806, 2889, 3024 and 3287 are mapping
+artefacts (section 3.7), not suspects.
 
 ### 3.6 GPQA option mapping and duplicate options
 
@@ -383,12 +390,12 @@ Ten of the 546 items were dropped because two or more options share a text hash:
   to the planted keys), and they were not recomputed.
 - Residual variance floor in the calibrated estimator (`593ed9f`, section 3.1). Without it
   the narrow interval was [0.92%, 1.93%].
-- After an independent check of the write-up: validation now evaluates the study's own flags
-  (q-values over all items; previously q-values were recomputed on the labeled items only,
-  giving 699 flagged and 34 narrow hits instead of 667 and 33); precision and recall at k
-  are expected values over random order within tied scores; the model-only flag rate is
-  also reported on the MMLU-derived items so that it is compared with the human-label rate
-  on the same items. The validate stage and the report were rerun; nothing else changed.
+- After a check of the write-up in a separate session: validation now evaluates the study's
+  own flags (q-values over all items; previously q-values were recomputed on the labeled
+  items only, giving 699 flagged and 34 narrow hits instead of 667 and 33); precision and
+  recall at k are expected values over random order within tied scores; the model-only flag
+  rate is also reported on the MMLU-derived items so that it is compared with the human-label
+  rate on the same items. The validate stage and the report were rerun; nothing else changed.
 
 **Re-audit (2026-10-30).** The fixes for audit findings 5 and 6 and the changes above were
 re-checked against the code and recomputed (no new data; a few figures below come from the
@@ -411,6 +418,34 @@ run units under `runs/`, which are not committed):
   counts all 23 changed items as positives, including the formatting-only one.
 - One fix: `scripts/run_simulation.py` did not accept the `coverage` profile or a seed, so
   the section 4.3 runs could not use the resume-on-failure wrapper.
+
+**Option mapping (found 2026-11-06).** Option text hashes are case-folded, and 18 MMLU-Pro
+items at `014c8cf5` have options that share a hash, nearly all because they differ only by
+case (genotypes such as "Bb Bb" and "bb Bb"). `build` sent every response on such an option
+to the first one. On the 6 items keyed to a later one the key looked unchosen. The adapter
+gate runs before this mapping, so it could not catch the error. The mapping is fixed
+(DESIGN 14, deviation 26), but `results/study-v1/` was built before the fix: rebuilding the
+matrix from the same units and refitting (`scripts/option_mapping_check.py`,
+`results/option-mapping-check/summary.json`; 444 of 1.15 million responses change, on 16
+items) gives:
+
+| | study-v1 | Fixed mapping |
+|---|---|---|
+| Calibrated narrow | 1.42% [0.78%, 2.07%] | 1.42% [0.78%, 2.07%] |
+| Calibrated broad | 3.91% [2.62%, 5.19%] | 3.91% [2.62%, 5.19%] |
+| Model-only rate, all items | 25.37% | 25.33% |
+| Model-only rate, in region | 22.43% | 22.39% |
+| Model-only rate, MMLU-derived items | 22.95% | 22.94% |
+| Flagged MMLU-Pro items | 2,953 | 2,947 |
+| Labeled items flagged, narrow hits | 667, 33 | 667, 33 |
+| AP narrow, ROC AUC narrow | 0.080, 0.773 | 0.080, 0.773 |
+| AP broad, ROC AUC broad | 0.078, 0.695 | 0.078, 0.694 |
+
+Items 2806, 2889, 3024 and 3287 go from a posterior of 0.95 to 1.00 down to at most 0.002.
+Items 2957 and 3504, also keyed to a later option, stay flagged. Items 2913, 3067 and 3182
+drop out and 12165 comes in at the q <= 0.10 boundary, only because the q-values shift.
+Bootstrap intervals, leave-one-family-out stability and planted keys were not rerun; the rest
+of this report is study-v1 as run.
 
 ## 4. Simulation study (known truth)
 
@@ -576,12 +611,16 @@ interval would not cover; only labels detect that.
   the true rate, so the broad upper limit holds in only 95.2-96.1% of replicates.
 - **Data handling.** 10 GPQA items were dropped (9 with duplicate options in the details, 1
   by a case-folding hash), 5 MMLU-Pro items could not be mapped across key revisions, one
-  model failed the adapter gate and one GPQA unit could not be read. The runs were scored
-  against five different MMLU-Pro key revisions; responses are mapped by option text to
+  model failed the adapter gate and one GPQA unit could not be read. Options differing only
+  by case were merged in `build` until a fix made after the study (section 3.7). The runs
+  were scored against five different MMLU-Pro key revisions; responses are mapped by option
+  text to
   `014c8cf5`, so a model's "correct" here can differ from its leaderboard scoring on items
   whose key changed.
-- **Audits.** The audit of 2026-10-24 checked the label-only numbers, the joins and this
-  report against `results/`; a re-verification confirmed the fixes for findings 1-4 and 7,
+- **Audits.** The audits were automated, in sessions separate from the one that ran the
+  study; the first report is not in this repository. The audit of 2026-10-24 checked the
+  label-only numbers, the joins and this report against `results/`; a re-verification
+  confirmed the fixes for findings 1-4 and 7,
   and a re-audit on 2026-10-30 those for findings 5 and 6 and the model-run changes
   (section 3.7). The item-bootstrap coverage is measured on one scenario (independent
   models) at a smaller panel size than DESIGN 7.2.
@@ -606,8 +645,10 @@ uv run keyaudit simulate --profile coverage --seed 20261025 --out runs/items-cov
 Units from seed 20261024 were written before the region-bounded interval existed and do
 not record it; rerunning into a fresh directory with the current code does.
 
-The calibrated-interval coverage grid of section 3.1 (`results/calibrated-cov-v1/`):
+The calibrated-interval coverage grid of section 3.1 (`results/calibrated-cov-v1/`) and the
+option-mapping comparison of section 3.7, which needs the study's run directory:
 
 ```sh
 uv run python scripts/calibrated_coverage.py --reps 1000 --chunk 50 --n-boot 200 --workers 3
+uv run python scripts/option_mapping_check.py
 ```

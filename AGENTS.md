@@ -25,8 +25,8 @@ maintainer corrections), and rank suspect items.
   modest memory (the machine is shared).
 - Long jobs: every finished unit goes through `keyaudit.checkpoint.UnitStore` (atomic file
   per unit, skip on rerun, `progress.log`); wrap long runs in `scripts/run_study.py`
-  (resume-on-failure loop). Keep a study run under ~45 min wall; the full size is
-  `configs/study_full.toml`.
+  (resume-on-failure loop). The default study takes about 2 h wall on 3 workers; the full
+  size, `configs/study_full.toml`, has never been run.
 - Data: downloads only from the sources in DESIGN 4.1, with timeouts, retries, pinned
   revisions and recorded checksums. Never commit raw data (`data/`, `cache/`, `runs/` are
   gitignored). Never redistribute leaderboard responses. Never write GPQA question text to a
@@ -35,8 +35,8 @@ maintainer corrections), and rank suspect items.
   stored. Accepting gated-repository conditions is the account owner's action, not an
   agent's.
 - Scratch files go in `tmp/` (gitignored). Do not create `.bak` copies; use git.
-- Commits end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. The repository
-  is public: change it through pull requests with CI, not direct pushes to main.
+- The repository is public: change it through pull requests with CI, not direct pushes to
+  main. Open work lives in `backlog.md`.
 - Public-release hygiene: no personal names, local user paths or machine details in
   committed files or logs (scrub before committing).
 - Statistical honesty: report sizes, seeds, versions and intervals; name the estimand
@@ -64,8 +64,9 @@ maintainer corrections), and rank suspect items.
 | `src/keyaudit/validate.py` | AP, AUC, @k, operating point, baseline comparison, planted keys, LOFO | done (M4) |
 | `src/keyaudit/study/runner.py`, `report.py`, `simulation.py` | stages as units, derived results, simulation study | done (M5) |
 | `src/keyaudit/cli.py` | `fetch / run / status / report / check-config / simulate / versions` | done (M5) |
-| `configs/study.toml`, `configs/study_full.toml` | default (< 45 min) and full-size study | done |
+| `configs/study.toml`, `configs/study_full.toml` | default (about 2 h) and full-size study | done |
 | `scripts/reference_values.py` | independent recomputation of DESIGN 7.1 | done |
+| `scripts/option_mapping_check.py` | study-v1 against a refit under the fixed option mapping | done |
 
 ## How to test
 
@@ -93,8 +94,9 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-10-30 (v0.1.1 prepared, not tagged; audit
-findings 1-7 fixed; the fixes for 5 and 6 and the model-run changes re-audited 2026-10-30).
+Updated: 2026-11-06 (v0.1.1 prepared, not tagged; audit
+findings 1-7 fixed; the fixes for 5 and 6 and the model-run changes re-audited 2026-10-30;
+release review below). Open work is in `backlog.md`.
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -140,8 +142,8 @@ Done (M5 and v0.1.0, untagged):
 - Checks at v0.1.0: `uv run pytest` (fast suite) passes, `ruff check` and `ruff format
   --check` pass. `scripts/reference_values.py` runs (exit 0); `pytest --runslow` was not re-run.
 
-Audit (independent, 2026-10-24; report kept outside the repository). Fixed after it, each in
-its own commit, from cached data only (no model calls):
+Audit (automated, separate session, 2026-10-24; report kept outside the repository). Fixed
+after it, each in its own commit, from cached data only (no model calls):
 - Finding 1 (high): label-only intervals covered ~86% in a simulation of the actual design
   (35 of 56 subject strata have no positive, zero variance). Each stratum's variance is now
   floored at its category's pooled labeled variance (`stats.stratified_difference_estimate`
@@ -227,13 +229,14 @@ misses one-sided with the upper limit holding in 95.2-96.1%; unfloored 87.5-92.1
 92.6-93.5%; no cell below 93%). REPORT 3.1 and 5, DESIGN 14 deviation 25, the CHANGELOG and
 the release notes carry the grid.
 
-Remaining:
-1. Tag v0.1.1 (owner).
-2. Optional: rerun simulation-v1 with the current code (one-function calibration, tie-aware
-   AP), add a simulation scenario with one dominant family like the real panel, and measure
-   item-bootstrap coverage in the `weak` and `families` scenarios.
-3. Optional: recover the GPQA item dropped by case-folding (case-sensitive hash, re-fetch);
-   evaluate the Platinum MMLU high-school maths overlap; trace whether the 9 GPQA
-   duplicate-option items come from GPQA or the harness.
-4. A stronger, less correlated panel (e.g. `evaleval/EEE_datastore`, not an approved source)
-   is the only way the model-only rate could become informative; owner decision.
+Release review (2026-11-06; cached units only). `keyaudit report` regenerated `results/study-v1/`
+byte for byte, `scripts/check_data_facts.py` reproduced `results/data-facts.json`, the first
+chunks of `scripts/calibrated_coverage.py` matched their run units and the figures matched
+`docs/figures/`. The constants of the coverage script recompute from the study fit.
+- Fixed: options that share a case-folded hash were merged in `build_matrix`, so 4 flags are
+  artefacts (REPORT 3.7, DESIGN 14 deviation 26; `results/study-v1/` predates the fix).
+- Fixed: `report` and `status` opened a run with another config; invalid configs gave a
+  traceback and were retried; `model.groups` was ignored (deviation 27).
+- Added: `panel.json` (numbers REPORT quoted from uncommitted units). Lock: certifi, filelock
+  and pillow moved past published advisories (OSV shows none for the lock now). CI actions
+  pinned to commits. sdist carries `results/` and `REPORT.md`.
