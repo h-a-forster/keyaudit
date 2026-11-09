@@ -56,6 +56,6 @@ to the benchmark's maintainers.
 - One change per pull request, with tests and docs.
 - Put user-visible changes in `docs/release-notes-<version>.md`; do not hand-edit
   [CHANGELOG.md](CHANGELOG.md).
-- Keep [backlog.md](backlog.md) and the status in [AGENTS.md](AGENTS.md) current.
+- Keep the status in [AGENTS.md](AGENTS.md) current.
 
 Security issues: see [SECURITY.md](SECURITY.md). Do not open a public issue.

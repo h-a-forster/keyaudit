@@ -20,3 +20,4 @@ cache/
 runs/
 *.npz
 !tests/fixtures/**/*.npz
+backlog.md

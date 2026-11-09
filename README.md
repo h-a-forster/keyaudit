@@ -175,7 +175,7 @@ or stores the token, and it never writes GPQA question text to any output.
 - [docs/DESIGN.md](docs/DESIGN.md): estimands, model, identifiability, validation plan and
   every deviation found during implementation (section 14).
 - [REPORT.md](REPORT.md): what was run, the results, and their limits.
-- [AGENTS.md](AGENTS.md): status and conventions; [backlog.md](backlog.md): open work.
+- [AGENTS.md](AGENTS.md): status and conventions.
 
 ## Citation
 
