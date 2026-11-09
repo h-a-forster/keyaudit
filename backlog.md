@@ -5,7 +5,6 @@
 ## Waiting on me
 
 - Branch `polish-2026-10-30` is merged to main through a pull request with CI green, and v0.1.1 is tagged with `docs/release-notes-0.1.1.md` as its release notes.
-- Private vulnerability reporting is enabled on the repository, so the route in `SECURITY.md` works.
 - A stronger, less correlated panel is approved or rejected as a source (for example `evaleval/EEE_datastore`); it is the only way the model-only rate could become informative.
 
 ## Decided
