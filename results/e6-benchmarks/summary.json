@@ -1,0 +1,166 @@
+{
+ "bbh": {
+  "geometric_shapes": {
+   "models": 93,
+   "e_model_pct": 9.0,
+   "items": 250,
+   "positives": 50,
+   "flags": 5,
+   "flags_on_positives": 0,
+   "ap": 0.277,
+   "ap_random": 0.2,
+   "auc": 0.65
+  },
+  "date_understanding": {
+   "models": 96,
+   "e_model_pct": 6.3,
+   "items": 250,
+   "positives": 20,
+   "flags": 12,
+   "flags_on_positives": 2,
+   "ap": 0.116,
+   "ap_random": 0.08,
+   "auc": 0.63
+  }
+ },
+ "sampled": {
+  "arc_challenge": {
+   "items": 1172,
+   "models": 90,
+   "tau": 2.44,
+   "e_model_pct": 23.3,
+   "flags": 287,
+   "sample_flagged": 80,
+   "sample_unflagged": 120,
+   "seed": 20261109,
+   "wrong_key": {
+    "positives_flagged": 2,
+    "positives_unflagged": 0,
+    "rate_pct": 0.61,
+    "ci95_pct": [
+     0.26,
+     2.39
+    ]
+   },
+   "any_defect": {
+    "positives_flagged": 6,
+    "positives_unflagged": 2,
+    "rate_pct": 3.1,
+    "ci95_pct": [
+     1.71,
+     5.97
+    ]
+   }
+  },
+  "truthfulqa": {
+   "items": 817,
+   "models": 87,
+   "tau": 4.41,
+   "e_model_pct": 37.0,
+   "flags": 271,
+   "sample_flagged": 80,
+   "sample_unflagged": 120,
+   "seed": 20261110,
+   "wrong_key": {
+    "positives_flagged": 0,
+    "positives_unflagged": 0,
+    "rate_pct": 0.0
+   },
+   "any_defect": {
+    "positives_flagged": 2,
+    "positives_unflagged": 1,
+    "rate_pct": 1.39,
+    "ci95_pct": [
+     0.61,
+     3.67
+    ]
+   }
+  }
+ },
+ "bbh_solver_census": {
+  "boolean_expressions": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "multistep_arithmetic_two": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "dyck_languages": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "word_sorting": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "web_of_lies": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "navigate": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "tracking_shuffled_objects_three_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "tracking_shuffled_objects_five_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "tracking_shuffled_objects_seven_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "logical_deduction_three_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "logical_deduction_five_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "logical_deduction_seven_objects": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "temporal_sequences": {
+   "n": 250,
+   "agree": 250,
+   "disagree": 0,
+   "unparsed": 0
+  },
+  "geometric_shapes": {
+   "n": 250,
+   "agree": 179,
+   "disagree": 25,
+   "unparsed": 46
+  }
+ }
+}
