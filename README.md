@@ -144,8 +144,8 @@ the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94
   the narrow ranking metrics above do not change at the precision shown.
 
 On synthetic panels where its assumptions hold, the model recovers planted mis-keys well
-(AP 0.87-0.95, `results/simulation-v2/`, rerun 2026-11-13 with the current code); the real panel is far more correlated than those
-simulations.
+(AP 0.87-0.95, `results/simulation-v2/`, rerun 2026-11-13 with the current code); the real
+panel is far more correlated than those simulations.
 
 Upstream reports and their outcomes: [docs/upstream.md](docs/upstream.md).
 
