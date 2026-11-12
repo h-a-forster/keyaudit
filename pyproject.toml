@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "keyaudit"
 version = "0.1.1"
-description = "Calibrated estimates of benchmark answer-key error rates from model-response panels, with a ranked list of suspect items, validated against human relabels."
+description = "Tests whether model-response panels can estimate benchmark answer-key error rates (on their own they cannot); label-calibrated estimator, suspect ranking and identifiability limits."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
