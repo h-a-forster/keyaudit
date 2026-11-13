@@ -67,7 +67,7 @@ maintainer corrections), and rank suspect items.
 | `configs/study.toml`, `configs/study_full.toml` | default (about 2 h) and full-size study | done |
 | `scripts/reference_values.py` | independent recomputation of DESIGN 7.1 | done |
 | `scripts/option_mapping_check.py` | study-v1 against a refit under the fixed option mapping | done |
-| `scripts/e6/` | E6: flags against real key errors on BBH, ARC, TruthfulQA (REPORT 3.8) | done |
+| `scripts/e6/` | E6: flags against real key defects on BBH, ARC, TruthfulQA (REPORT 3.8) | done |
 
 ## How to test
 
@@ -169,7 +169,8 @@ after it, each in its own commit, from cached data only (no model calls):
   [+0.08, +0.20] points with 50/1,000 labeled (slow seeded test; the new form +0.03
   [-0.02, +0.08]). The audit's -0.30 in `tricks` is label-draw noise: the same 10 draws give
   -0.30 under both forms; 22 panels x 100 draws give -0.00 [-0.02, +0.02] (old) and +0.00
-  [-0.02, +0.02] (new). simulation-v1 not rerun.
+  [-0.02, +0.02] (new). The simulation was rerun with the new form as
+  `results/simulation-v2` (2026-11-13).
 - Finding 6, coverage: `--profile coverage` (72 panels 1000 x 60, B = 20, ~15 min on 3
   workers), seeds 20261024 / 20261025 (`results/items-cov-v1`, `-v2`). Percentile overall
   34/72 and 35/72 (bias about -0.95 points from outside the region, invisible to the

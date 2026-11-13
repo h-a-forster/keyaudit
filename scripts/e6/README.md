@@ -1,4 +1,4 @@
-# E6: keyaudit on real key errors (2026-11-09)
+# E6: keyaudit on real key defects (2026-11-09)
 
 REPORT.md section 3.8. These scripts are kept as they ran (outside ruff), except that the
 boards folder is now an argument instead of a fixed relative path. They call keyaudit as a
@@ -11,10 +11,10 @@ library and make no model calls.
 | `summary.json` | every number in REPORT 3.8; rebuilt by `score.py` from the files below |
 | `labels.json` | census truth for geometric_shapes and date_understanding, the solver census per BBH subtask, the ARC and TruthfulQA sample designs (seeds, selected items), fit summaries |
 | `flags-*.csv` | per item: key, proposed option, posterior `s`, q-value, flag (no question text, no responses) |
-| `claims_arc_tqa.json` | the ARC and TruthfulQA claims with reasons and sources (final classes in `score.py`) |
+| `claims_arc_tqa.json` | the 12 ARC and TruthfulQA claims put to the second pass, with reasons and sources: `cls` is the final class that `score.py` scores ("wrong key" counts as wrong, every class but "refuted" as a defect), `first_pass_cls` the class it replaced, `second_pass` the refutation pass's verdict |
 | `*_answers.txt`, `date_table.md` | the blind first-pass answers, by sheet number, and the date census table |
 
-`claims_arc_tqa.json` quotes the 12 claimed items: ARC-Challenge text is CC-BY-SA-4.0 (Ai2,
+`claims_arc_tqa.json` quotes those items: ARC-Challenge text is CC-BY-SA-4.0 (Ai2,
 `allenai/ai2_arc`), TruthfulQA text Apache-2.0. `date_table.md` quotes BBH stems (MIT).
 
 ```sh

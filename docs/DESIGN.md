@@ -666,7 +666,8 @@ against the pinned revisions on 2026-10-24 (output: `results/data-facts.json`, l
     new +0.00 [-0.02, +0.02] points. The audit's -0.30 [-0.57, -0.03] in simulation-v1
     reproduces exactly from those 10 panels' label draws and is unchanged (-0.30) under the
     new form, so it was sampling noise in the label draws, not the mixed scores.
-    simulation-v1 has not been rerun with the new form.
+    The simulation study was rerun with the new form on 2026-11-13 as
+    `results/simulation-v2` (REPORT 4.1).
 22. **Item-bootstrap coverage and the overall interval (audit finding 6).** Profile
     `coverage` (72 panels of 1,000 items x 60 independent models, eps = 0.03, B = 20), run
     with seeds 20261024 (`results/items-cov-v1`) and 20261025 (`results/items-cov-v2`).

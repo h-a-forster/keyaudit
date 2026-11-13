@@ -10,18 +10,20 @@ can estimate a benchmark's key-error rate and find the wrong keys. It fits a mis
 class model, calibrates the rate against a random human-labeled sample, ranks suspect items,
 and states what responses alone cannot identify.
 
-**Result: responses alone do not find key errors.** Run on 96 Open LLM Leaderboard models
-(v0.1.1, [REPORT.md](REPORT.md)):
+**Result: responses alone do not find key errors** ([REPORT.md](REPORT.md)):
 
-- On MMLU-Pro's MMLU-derived items the model panel flags 22-25% of keys as wrong, against
+- On MMLU-Pro's MMLU-derived items (the v0.1.1 study, 96 Open LLM Leaderboard models) the
+  panel's model-only rate, its mean posterior that a key is wrong, is 21-23%, against
   1.42% [0.78%, 2.07%] by the human labels. The scores add nothing to the labels (variance
   ratio 1.01), so that 1.42% is MMLU-Redux 2.0's relabels reweighted to MMLU-Pro (labels
   alone: 1.48%). The strongest models share the same wrong answers, which responses cannot
   tell apart from a wrong key.
 - On 70 real key defects in BIG-Bench Hard, found by solving every item, the flags hit 0 of
-  50 in geometric_shapes and 2 of 20 in date_understanding (REPORT.md 3.8).
-- On ARC-Challenge and TruthfulQA the panel flags 23% and 37% of items; random samples checked
-  item by item against sources put the defect rates at 3.1% and 1.4%.
+  50 in geometric_shapes and 2 of 20 in date_understanding (REPORT.md 3.8, added after
+  v0.1.1).
+- On ARC-Challenge and TruthfulQA, with v1-leaderboard panels of 90 and 87 models, the
+  model-only rates are 23% and 37% (24% and 33% of items flagged at q <= 0.10); random
+  samples checked item by item against sources put the defect rates at 3.1% and 1.4%.
 
 The panel tells you where to sample for human labels, not what the rate is.
 

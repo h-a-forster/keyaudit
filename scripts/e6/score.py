@@ -2,9 +2,9 @@
 
 Usage: uv run python scripts/e6/score.py [results/e6-benchmarks]
 
-Reads only committed files in the results folder (flag tables, labels.json), so the numbers
-in REPORT.md section 3.8 can be rebuilt without the raw boards. `tests/test_e6_results.py`
-checks that the committed summary matches.
+Reads only committed files in the results folder (flag tables, labels.json,
+claims_arc_tqa.json), so the numbers in REPORT.md section 3.8 can be rebuilt without the raw
+boards. `tests/test_e6_results.py` checks that the committed summary matches.
 """
 
 from __future__ import annotations
@@ -18,13 +18,9 @@ import numpy as np
 
 from keyaudit.validate import average_precision, roc_auc
 
-# Final classes after the second pass and the 2026-11-09 correction (REPORT 3.8): the Europa
-# item moved from wrong key to unclear stem; Mercury_SC_401357 was refuted.
-ARC_WRONG = ["Mercury_7128923", "Mercury_SC_401361"]
-ARC_DEFECT = ARC_WRONG + ["Mercury_7235638", "Mercury_7015208", "Mercury_7057085",
-                          "Mercury_7227815", "Mercury_SC_414339", "MCAS_2011_8_15365"]  # fmt: skip
-TQA_WRONG: list[int] = []
-TQA_DEFECT = [567, 23, 478]  # imprecise, contested, stale since 2025
+# Final classes come from claims_arc_tqa.json (first-pass classes are kept there as
+# first_pass_cls): "wrong key" counts as a wrong key, every class but "refuted" as a defect.
+SAMPLED = {"ARC-Challenge test": "arc_challenge", "TruthfulQA MC1": "truthfulqa"}
 DRAWS = 200_000
 
 
@@ -62,8 +58,22 @@ def _stratified(rows: list[dict], design: dict, positives: set, seed: int) -> di
             "ci95_pct": [round(100 * lo, 2), round(100 * hi, 2)]}  # fmt: skip
 
 
+def claim_classes(folder: Path) -> dict[str, tuple[list, list]]:
+    """(wrong keys, all defects) per sampled benchmark, from the final classes in the claims."""
+    claims = json.loads((folder / "claims_arc_tqa.json").read_text(encoding="utf-8"))
+    out: dict[str, tuple[list, list]] = {b: ([], []) for b in SAMPLED.values()}
+    for c in claims:
+        wrong, defect = out[SAMPLED[c["benchmark"]]]
+        if c["cls"] == "wrong key":
+            wrong.append(c["item"])
+        if c["cls"] != "refuted":
+            defect.append(c["item"])
+    return out
+
+
 def summarise(folder: Path) -> dict:
     labels = json.loads((folder / "labels.json").read_text(encoding="utf-8"))
+    classes = claim_classes(folder)
     fits = labels["fits"]
     out: dict = {"bbh": {}, "sampled": {}, "bbh_solver_census": labels["bbh_solver_census"]}
     for t, pos in (("geometric_shapes", labels["bbh_geometric_shapes"]["several_correct"]),
@@ -72,8 +82,7 @@ def summarise(folder: Path) -> dict:
         fit = fits[f"bbh_{t}"]
         out["bbh"][t] = {"models": fit["models"], "e_model_pct": round(100 * fit["e_model"], 1),
                          **row}  # fmt: skip
-    for b, wrong, defect in (("arc_challenge", ARC_WRONG, ARC_DEFECT),
-                             ("truthfulqa", TQA_WRONG, TQA_DEFECT)):  # fmt: skip
+    for b, (wrong, defect) in classes.items():
         rows = _read(folder / f"flags-{b}.csv")
         fit = fits[b]
         design = fit["sample_design"]
@@ -92,7 +101,7 @@ def summarise(folder: Path) -> dict:
 def main(argv: list[str]) -> int:
     folder = Path(argv[0]) if argv else Path("results/e6-benchmarks")
     text = json.dumps(summarise(folder), indent=1) + "\n"
-    (folder / "summary.json").write_text(text, encoding="utf-8")
+    (folder / "summary.json").write_text(text, encoding="utf-8", newline="\n")
     print(text)
     return 0
 

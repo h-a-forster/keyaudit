@@ -1,7 +1,8 @@
 # keyaudit report (v0.1.1)
 
 Date: 2026-10-24 (study); re-audit notes 2026-10-30; option-mapping note 2026-11-06; E6
-(section 3.8) 2026-11-09; simulation rerun 2026-11-13. Every number here comes from committed
+(section 3.8) 2026-11-09 and simulation rerun 2026-11-13, both added after the v0.1.1
+release. Every number here comes from committed
 result sets, except the wall times (run logs) and where sections 3.6 and 3.7 say otherwise:
 `results/study-v1/` (the real study, all stages), `results/e6-benchmarks/` (section 3.8),
 `results/simulation-v2/`, `results/items-cov-v1/`, `results/items-cov-v2/`,
@@ -16,8 +17,8 @@ drawn from `results/` by `scripts/make_figures.py`.
   model scores add nothing to the human labels (below), and on 70 real key defects in
   BIG-Bench Hard, found by solving every item, keyaudit's flags hit 0 of 50 in
   geometric_shapes and 2 of 20 in date_understanding (section 3.8). On ARC-Challenge and
-  TruthfulQA the panel flags 23% and 37% of items, against defect rates of 3.1% and 1.4% in
-  random samples checked item by item against sources.
+  TruthfulQA the model-only rates are 23% and 37% (24% and 33% of items flagged), against
+  defect rates of 3.1% and 1.4% in random samples checked item by item against sources.
 - **About 1.4% of MMLU-Pro's MMLU-derived items have a wrong key, by the human labels.** The
   label-calibrated estimate (model scores calibrated on the MMLU-Redux 2.0 relabels, over
   the 6,806 MMLU-derived items in the response matrix) is **1.42% [0.78%, 2.07%]** for a
@@ -454,7 +455,7 @@ drop out and 12165 comes in at the q <= 0.10 boundary, only because the q-values
 Bootstrap intervals, leave-one-family-out stability and planted keys were not rerun; the rest
 of this report is study-v1 as run.
 
-### 3.8 Real key errors: BBH, ARC-Challenge and TruthfulQA (E6, 2026-11-09)
+### 3.8 Real key defects: BBH, ARC-Challenge and TruthfulQA (E6, 2026-11-09)
 
 The study above validates the ranking against human relabels. E6 asked the direct question:
 on benchmarks where the true key errors can be found another way, do keyaudit's flags find
@@ -505,8 +506,8 @@ sample, but flag precision was 2 of 80.
 **Limits.** Both passes were done by the same model family, not by people, and blinding hides
 the key from the sheet, not from memory of well-known benchmarks. The ARC estimates rest on
 2 and 8 positives. The judgement subtasks of BBH (for example ruin_names) had no deciding
-source, so no rate is claimed for them. One BBH defect class was filed upstream
-([docs/upstream.md](docs/upstream.md)).
+source, so no rate is claimed for them. The geometric_shapes and date_understanding defects
+were filed upstream as one issue ([docs/upstream.md](docs/upstream.md)).
 
 ## 4. Simulation study (known truth)
 
