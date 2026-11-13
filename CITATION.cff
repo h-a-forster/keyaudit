@@ -2,9 +2,12 @@ cff-version: 1.2.0
 message: "If you use keyaudit, please cite it as below."
 title: keyaudit
 abstract: >-
-  Calibrated estimates of benchmark answer-key error rates from panels of model
-  responses, with a ranked list of suspect items, validated against human relabels
-  (MMLU-Redux, Platinum) and with explicit identifiability limits.
+  Tests whether panels of model responses can estimate benchmark answer-key error
+  rates. They cannot on their own: on MMLU-Pro the panel adds nothing to the human
+  relabels (MMLU-Redux), and on 70 real BIG-Bench Hard key defects (20 wrong keys, 50 keys
+  that are not the single best answer) its flags catch 2 of them.
+  Includes the label-calibrated estimator, a suspect ranking and the identifiability
+  limits.
 type: software
 authors:
   - name: keyaudit contributors

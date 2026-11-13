@@ -5,18 +5,27 @@
 
 How many answer keys in a multiple-choice LLM benchmark are wrong, and which items are they?
 
-keyaudit estimates benchmark key-error rates from existing per-item model responses (no new
-model runs, no LLM judge). It gives intervals and a ranked list of suspect items, calibrates
-the rate against human relabels, and says plainly what responses alone cannot identify.
+keyaudit tests whether existing per-item model responses (no new model runs, no LLM judge)
+can estimate a benchmark's key-error rate and find the wrong keys. It fits a mis-keyed latent
+class model, calibrates the rate against a random human-labeled sample, ranks suspect items,
+and states what responses alone cannot identify.
 
-**Status: v0.1.1, pre-release.** The method, the data layer and the study pipeline are
-implemented and tested, and the study has been run on 96 Open LLM Leaderboard models
-(MMLU-Pro, GPQA and three BBH tasks). Results are in [REPORT.md](REPORT.md). In short: about
-1.4% of MMLU-Pro's MMLU-derived items have a wrong key by the human-label-calibrated
-estimate, while the model panel alone suggests 22-25%, because the strongest leaderboard
-models share the same wrong answers. An automated audit in a separate session (2026-10-24)
-found eight issues, all addressed; a re-audit (2026-10-30) of the last fixes and of the
-changes made during the model run reproduced their numbers (REPORT.md 3.7).
+**Result: responses alone do not find key errors** ([REPORT.md](REPORT.md)):
+
+- On MMLU-Pro's MMLU-derived items (the v0.1.1 study, 96 Open LLM Leaderboard models) the
+  panel's model-only rate, its mean posterior that a key is wrong, is 21-23%, against
+  1.42% [0.78%, 2.07%] by the human labels. The scores add nothing to the labels (variance
+  ratio 1.01), so that 1.42% is MMLU-Redux 2.0's relabels reweighted to MMLU-Pro (labels
+  alone: 1.48%). The strongest models share the same wrong answers, which responses cannot
+  tell apart from a wrong key.
+- On 70 real key defects in BIG-Bench Hard, found by solving every item, the flags hit 0 of
+  50 in geometric_shapes and 2 of 20 in date_understanding (REPORT.md 3.8, added after
+  v0.1.1).
+- On ARC-Challenge and TruthfulQA, with v1-leaderboard panels of 90 and 87 models, the
+  model-only rates are 23% and 37% (24% and 33% of items flagged at q <= 0.10); random
+  samples checked item by item against sources put the defect rates at 3.1% and 1.4%.
+
+The panel tells you where to sample for human labels, not what the rate is.
 
 ## Why
 
@@ -137,8 +146,10 @@ the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94
   the narrow ranking metrics above do not change at the precision shown.
 
 On synthetic panels where its assumptions hold, the model recovers planted mis-keys well
-(AP 0.87-0.95, `results/simulation-v1/`); the real panel is far more correlated than those
-simulations.
+(AP 0.87-0.95, `results/simulation-v2/`, rerun 2026-11-13 with the current code); the real
+panel is far more correlated than those simulations.
+
+Upstream reports and their outcomes: [docs/upstream.md](docs/upstream.md).
 
 ## Data access
 

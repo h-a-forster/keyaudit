@@ -1,9 +1,11 @@
 # keyaudit report (v0.1.1)
 
-Date: 2026-10-24 (study); re-audit notes 2026-10-30; option-mapping note 2026-11-06. Every
-number here comes from committed result sets, except the wall times (run logs) and where
-sections 3.6 and 3.7 say otherwise: `results/study-v1/` (the real study, all stages),
-`results/simulation-v1/`, `results/items-cov-v1/`, `results/items-cov-v2/`,
+Date: 2026-10-24 (study); re-audit notes 2026-10-30; option-mapping note 2026-11-06; E6
+(section 3.8) 2026-11-09 and simulation rerun 2026-11-13, both added after the v0.1.1
+release. Every number here comes from committed
+result sets, except the wall times (run logs) and where sections 3.6 and 3.7 say otherwise:
+`results/study-v1/` (the real study, all stages), `results/e6-benchmarks/` (section 3.8),
+`results/simulation-v2/`, `results/items-cov-v1/`, `results/items-cov-v2/`,
 `results/calibrated-cov-v1/` (simulations with known truth) and
 `results/option-mapping-check/`. Estimands and methods are defined in
 [docs/DESIGN.md](docs/DESIGN.md); deviations are listed in DESIGN section 14. Figures are
@@ -11,7 +13,13 @@ drawn from `results/` by `scripts/make_figures.py`.
 
 **Summary.**
 
-- **Headline: about 1.4% of MMLU-Pro's MMLU-derived items have a wrong key.** The
+- **Main result: model responses alone do not find answer-key errors.** On MMLU-Pro the
+  model scores add nothing to the human labels (below), and on 70 real key defects in
+  BIG-Bench Hard, found by solving every item, keyaudit's flags hit 0 of 50 in
+  geometric_shapes and 2 of 20 in date_understanding (section 3.8). On ARC-Challenge and
+  TruthfulQA the model-only rates are 23% and 37% (24% and 33% of items flagged), against
+  defect rates of 3.1% and 1.4% in random samples checked item by item against sources.
+- **About 1.4% of MMLU-Pro's MMLU-derived items have a wrong key, by the human labels.** The
   label-calibrated estimate (model scores calibrated on the MMLU-Redux 2.0 relabels, over
   the 6,806 MMLU-derived items in the response matrix) is **1.42% [0.78%, 2.07%]** for a
   wrong key (narrow) and **3.91% [2.62%, 5.19%]** for any key problem: wrong key, no correct
@@ -62,13 +70,13 @@ drawn from `results/` by `scripts/make_figures.py`.
 
 ## 1. What was run
 
-| | study-v1 | simulation-v1 |
+| | study-v1 | simulation-v2 |
 |---|---|---|
 | Config | `configs/study.toml`, hash `a2773441...` | profile `default` (`keyaudit.study.simulation.PROFILES`) |
 | Seed | 20261024 | 20261024 |
-| Units | fetch 500, labels 1, build 6, fit 5, boot 100, lofo 25, planted 40, validate 5 (all ok) | 70/70 (40 scenario panels, 30 coverage panels) |
-| Wall time | about 2 h: fetch 23 min plus a 5 min GPQA re-fetch (1 worker), build 10 min, fit 1 min, bootstrap 52 min, planted keys 20 min, the rest 2 min (3 workers) | 38.6 min on 3 workers |
-| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix); `build` predates the option-mapping fix of section 3.7 | keyaudit 0.1.0.dev0 (M5) |
+| Units | fetch 500, labels 1, build 6, fit 5, boot 100, lofo 25, planted 40, validate 5 (all ok) | 70/70 (40 scenario panels, 30 item-bootstrap coverage panels) |
+| Wall time | about 2 h: fetch 23 min plus a 5 min GPQA re-fetch (1 worker), build 10 min, fit 1 min, bootstrap 52 min, planted keys 20 min, the rest 2 min (3 workers) | 29 min on 3 workers (2026-11-13) |
+| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix); `build` predates the option-mapping fix of section 3.7 | keyaudit 0.1.1 at `face0a2` (rerun of simulation-v1, 0.1.0.dev0, after the fixes `15d5b7a` and `593ed9f`) |
 
 The configuration projected 20-30 minutes; the MMLU-Pro bootstrap (200 refits of a
 12,027 x 96 matrix, about 44 s each) dominated. `results/study-v1/provenance.json` records
@@ -447,6 +455,60 @@ drop out and 12165 comes in at the q <= 0.10 boundary, only because the q-values
 Bootstrap intervals, leave-one-family-out stability and planted keys were not rerun; the rest
 of this report is study-v1 as run.
 
+### 3.8 Real key defects: BBH, ARC-Challenge and TruthfulQA (E6, 2026-11-09)
+
+The study above validates the ranking against human relabels. E6 asked the direct question:
+on benchmarks where the true key errors can be found another way, do keyaudit's flags find
+them? They do not. Scripts are in `scripts/e6/` (README there), and every number below is
+rebuilt from `results/e6-benchmarks/` by `scripts/e6/score.py` (checked by
+`tests/test_e6_results.py`).
+
+**BIG-Bench Hard: a census of key errors, scored against the flags.** 15 of the 27 subtasks
+(3,750 items) were checked in full by deterministic solvers or computed answers: 13 subtasks
+had no mismatch (3,250 items), and two had systematic defects.
+
+- `geometric_shapes`: the 25 items keyed "trapezoid" draw rectangles and the 25 keyed
+  "ellipse" draw circles, with "rectangle" and "circle" offered every time (upstream BIG-bench
+  scores both names as correct; BBH kept one). 50 of 250 keys are not the single best answer.
+- `date_understanding`: 20 of 250 keys are wrong by date arithmetic from the stem (for
+  example Thanksgiving 2001 was 11/22/2001), 13 of them with no correct option.
+
+A second, independent pass recomputed both tasks and agreed. keyaudit was fitted on each task
+with the study's panel (93 and 96 models, adapter gate passed) and flagged at q <= 0.10:
+
+| Task | Defects | Flags | Flags on defects | AP (random) | ROC AUC | `E_model` |
+|---|---|---|---|---|---|---|
+| geometric_shapes | 50 of 250 | 5 | **0** | 0.277 (0.200) | 0.65 | 9.0% |
+| date_understanding | 20 of 250 | 12 | **2** | 0.116 (0.080) | 0.63 | 6.3% |
+
+Keys that are wrong the same way across many items, or that models are trained toward, do
+not look like mis-keys to a panel: it agrees with them.
+
+**ARC-Challenge and TruthfulQA: stratified random samples.** Panels from the v1 leaderboard
+(90 and 87 models after near-duplicate removal; each passed a per-sample gate). Flag status
+was fixed first; then 80 flagged and 120 unflagged items were read blind to the key and
+panel, every disagreement was checked against a source, and a second pass tried to refute
+each claim. Estimates are stratified by flag status with a finite-population correction;
+intervals are Jeffreys posteriors per stratum (the difference estimator's normal interval
+crosses zero with this few positives) and cover sampling error only.
+
+| Benchmark | Items | `E_model` (flags) | Wrong key | Any key defect |
+|---|---|---|---|---|
+| ARC-Challenge test | 1,172 | 23.3% (287) | 0.61% [0.26%, 2.39%], 2 of 2 in the flagged stratum | 3.10% [1.71%, 5.97%], 6 flagged, 2 unflagged |
+| TruthfulQA MC1 | 817 | 37.0% (271) | 0 found | 1.39% [0.61%, 3.67%], all contested or imprecise |
+
+The model-only rates, 23% and 37%, are far above the sampled defect rates of 3.1% and 1.4%,
+as on MMLU-Pro. TruthfulQA is the
+identifiability limit in pure form: by design, every model is drawn to the same misconception.
+On ARC the flagged stratum is where the wrong keys were, so the panel is a useful place to
+sample, but flag precision was 2 of 80.
+
+**Limits.** Both passes were done by the same model family, not by people, and blinding hides
+the key from the sheet, not from memory of well-known benchmarks. The ARC estimates rest on
+2 and 8 positives. The judgement subtasks of BBH (for example ruin_names) had no deciding
+source, so no rate is claimed for them. The geometric_shapes and date_understanding defects
+were filed upstream as one issue ([docs/upstream.md](docs/upstream.md)).
+
 ## 4. Simulation study (known truth)
 
 The sizes follow DESIGN 7.2: 100 models, 3,000 items, K = 10 options, a true key-error rate
@@ -464,10 +526,10 @@ for the mean over replicates. The scenarios are:
 
 | Scenario | True rate | `E_model`, all items | Bias of `E_model` | Region share | `E_model` in region (true) | Calibrated, 25% labeled | Calibrated CI coverage |
 |---|---|---|---|---|---|---|---|
-| design | 2.87 | 2.45 [2.20, 2.69] | -0.42 [-0.48, -0.36] | 86% | 2.38 (2.44) | 2.86 [2.57, 3.15] | 10/10 |
-| weak | 2.91 | 2.43 [2.30, 2.56] | -0.48 [-0.57, -0.40] | 68% | 2.29 (2.33) | 2.98 [2.76, 3.21] | 10/10 |
-| families | 3.04 | 1.93 [1.79, 2.07] | -1.11 [-1.20, -1.02] | 86% | 1.76 (1.83) | 3.06 [2.90, 3.22] | 9/10 |
-| tricks | 3.02 | 5.05 [4.70, 5.40] | +2.03 [+1.82, +2.23] | 86% | 4.93 (2.70) | 2.73 [2.26, 3.20] | 8/10 |
+| design | 2.87 | 2.45 [2.20, 2.69] | -0.42 [-0.48, -0.36] | 86% | 2.38 (2.44) | 2.86 [2.58, 3.14] | 10/10 |
+| weak | 2.91 | 2.43 [2.30, 2.56] | -0.48 [-0.57, -0.40] | 68% | 2.29 (2.33) | 2.98 [2.75, 3.21] | 10/10 |
+| families | 3.04 | 1.93 [1.79, 2.07] | -1.11 [-1.20, -1.02] | 86% | 1.76 (1.83) | 3.06 [2.89, 3.22] | 10/10 |
+| tricks | 3.02 | 5.05 [4.70, 5.40] | +2.03 [+1.82, +2.23] | 86% | 4.93 (2.70) | 2.73 [2.26, 3.20] | 9/10 |
 
 **Inside the competence region, without trick items, the model rate is close to the truth.**
 The in-region bias is -0.05 to -0.06 points in `design`, `weak` and `families`. Outside the
@@ -494,12 +556,14 @@ estimand is calibrated against human labels.
   each of 22 `tricks` panels both forms give -0.00 to +0.00 [-0.02, +0.02] points. So the
   -0.30 comes from those 10 label draws. The mixed form is biased when few items are labeled
   (+0.14 [+0.08, +0.20] points with 50 of 1,000 labeled, seeded test), which is why it was
-  replaced (DESIGN 14, deviation 21). The table above was computed with the old form and has
-  not been rerun.
-- Its standard error (0.24 to 0.44 points) is about half that of the labels-only estimator
-  on the same labels (0.51 to 0.56 points).
-- Interval coverage was 37/40 across scenarios, and 8/10 in `tricks`. With 10 replicates per
-  scenario, these counts cannot tell 95% coverage apart from about 75%.
+  replaced (DESIGN 14, deviation 21). The rerun with the one-function form
+  (`results/simulation-v2/`) gives the same -0.30 [-0.57, -0.03] in `tricks`.
+- Its standard error (0.30 to 0.49 points) is below that of the labels-only estimator on
+  the same labels (0.55 to 0.57 points): about half without trick items, 0.49 against 0.55
+  with them.
+- Interval coverage was 39/40 across scenarios (37/40 before the fixes), and 9/10 in
+  `tricks`. With 10 replicates per scenario, these counts cannot tell 95% coverage apart
+  from about 75%.
 
 ### 4.2 Ranking and operating point
 
@@ -507,13 +571,15 @@ Average precision against the planted mis-keys, and the operating point at q <= 
 
 | Scenario | keymix | keymix in region | top-decile disagreement | item-total | scalability | 2PL sign LRT | one-coin DS | Precision / recall at q <= 0.10 |
 |---|---|---|---|---|---|---|---|---|
-| design | 0.947 | 0.999 | 0.889 | 0.542 | 0.541 | 0.554 | 0.425 | 0.97 / 0.82 |
-| weak | 0.866 | 0.995 | 0.639 | 0.370 | 0.369 | 0.348 | 0.267 | 0.95 / 0.66 |
-| families | 0.914 | 0.998 | 0.862 | 0.472 | 0.469 | 0.472 | 0.541 | 1.00 / 0.57 |
-| tricks | 0.549 | 0.577 | 0.546 | 0.366 | 0.365 | 0.370 | 0.328 | 0.51 / 0.86 |
+| design | 0.947 | 0.999 | 0.866 | 0.541 | 0.540 | 0.563 | 0.410 | 0.97 / 0.82 |
+| weak | 0.866 | 0.995 | 0.596 | 0.372 | 0.371 | 0.350 | 0.254 | 0.95 / 0.66 |
+| families | 0.914 | 0.998 | 0.831 | 0.473 | 0.471 | 0.479 | 0.523 | 1.00 / 0.57 |
+| tricks | 0.550 | 0.577 | 0.517 | 0.366 | 0.365 | 0.376 | 0.320 | 0.51 / 0.86 |
 
 - keymix has the highest mean AP in every scenario. Its margin over top-decile disagreement
-  is large for a weak panel (0.87 against 0.64) and small for families (0.91 against 0.86).
+  is large for a weak panel (0.87 against 0.60) and small for families (0.91 against 0.83).
+  Tie-aware AP (`593ed9f`) lowered the baselines' AP slightly; keymix's AP moved by at most
+  0.001.
 - In the three scenarios without tricks, the model's own FDR estimate (0.095 to 0.096) is
   conservative: the realised false discovery proportion is 0.00 to 0.05.
 - With tricks the FDR estimate is badly anti-conservative: the realised proportion is 0.49.
@@ -523,7 +589,8 @@ paired test between methods was run on the simulation.
 
 ### 4.3 Bootstrap intervals for the model rate
 
-**The pigeonhole bootstrap used in simulation-v1 is not valid.** The coverage panels
+**The pigeonhole bootstrap used in simulation-v1 (`results/simulation-v1/`, superseded) is
+not valid.** The coverage panels
 (30 panels of 1,000 items and 60 models, B = 40) resampled both items and models. They
 reported coverage of 29/30 overall and 22/30 inside the competence region. The 29/30 is not
 evidence that the interval works:
@@ -565,6 +632,11 @@ about 15 minutes each on 3 workers).
   its interval and gives the overall rate with this interval and the worst-case bounds
   (DESIGN 14, deviation 22).
 
+The rerun of the default profile (`results/simulation-v2/`, 30 panels of 1,000 items and 60
+models, B = 40) uses the item bootstrap and agrees: in-region 30/30 (CP 95% 0.88-1.00),
+overall percentile 13/30 (0.25-0.63), region-bounded 30/30 with a median width of 16.6
+points.
+
 These checks use independent models without trick items. With shared blind spots
 (`tricks`, section 4.1) the in-region rate itself is about 2 points too high, and its
 interval would not cover; only labels detect that.
@@ -602,7 +674,7 @@ interval would not cover; only labels detect that.
 - **Simulation is not reality.** The simulated responses come from the model's own family,
   with deliberate violations in `weak`, `families` and `tricks`. The good results in 4.1 and
   4.2 are therefore a best case; the real-data ranking (AP 0.08) is far below the
-  simulated one (AP 0.87-0.95). With 10 replicates per scenario, the coverage statements are
+  simulated one (AP 0.87-0.95, `results/simulation-v2/`). With 10 replicates per scenario, the coverage statements are
   weak.
 - **Calibrated interval.** The residual variance floor in the calibrated estimator was added
   during this run by analogy with the label-only floor. In a simulation of this design it
@@ -629,13 +701,13 @@ interval would not cover; only labels detect that.
 
 ```sh
 uv sync --group dev
-uv run keyaudit simulate --profile default --out runs/simulation-v1 --results results/simulation-v1 --workers 3
+uv run python scripts/run_simulation.py --profile default --seed 20261024 --out runs/simulation-v2 --results results/simulation-v2   # about 30 min, resumes
 uv run python scripts/run_study.py --config configs/study.toml   # needs HF_TOKEN with accepted gates
 uv run keyaudit report --config configs/study.toml
 ```
 
-Rerunning `simulate` into an existing run directory reuses its finished units, including the
-pigeonhole coverage units. The item-bootstrap coverage runs of section 4.3:
+Rerunning `simulate` into an existing run directory reuses its finished units. The
+item-bootstrap coverage runs of section 4.3:
 
 ```sh
 uv run keyaudit simulate --profile coverage --seed 20261024 --out runs/items-cov-v1 --results results/items-cov-v1 --workers 3

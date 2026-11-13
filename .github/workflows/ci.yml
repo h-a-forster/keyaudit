@@ -1,7 +1,8 @@
 name: CI
 
-# No push trigger: changes reach main through pull requests, which run CI.
 on:
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

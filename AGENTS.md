@@ -67,6 +67,7 @@ maintainer corrections), and rank suspect items.
 | `configs/study.toml`, `configs/study_full.toml` | default (about 2 h) and full-size study | done |
 | `scripts/reference_values.py` | independent recomputation of DESIGN 7.1 | done |
 | `scripts/option_mapping_check.py` | study-v1 against a refit under the fixed option mapping | done |
+| `scripts/e6/` | E6: flags against real key defects on BBH, ARC, TruthfulQA (REPORT 3.8) | done |
 
 ## How to test
 
@@ -94,7 +95,8 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 
 ## Status and next steps
 
-Updated: 2026-11-06 (v0.1.1 prepared, not tagged; audit
+Updated: 2026-11-13 (v0.1.1 tagged and released 2026-11-07; E6 folded in as REPORT 3.8;
+simulation rerun as `results/simulation-v2/`; audit
 findings 1-7 fixed; the fixes for 5 and 6 and the model-run changes re-audited 2026-10-30;
 release review below). Open work is in `backlog.md`.
 
@@ -133,7 +135,7 @@ Done (M4):
   (AP/AUC with stratified bootstrap, precision/recall at k, FDR operating point, paired AP
   differences with Holm, planted keys, leave-one-family-out stability).
 
-Done (M5 and v0.1.0, untagged):
+Done (M5 and v0.1.0):
 - Runner, report, simulation study and CLI. `results/simulation-v1/` (70/70 units).
 - After the runs: the model-rate bootstrap became items-only with the panel fixed (DESIGN 14,
   deviation 20). The simulation-v1 coverage units predate this and used the pigeonhole
@@ -167,7 +169,8 @@ after it, each in its own commit, from cached data only (no model calls):
   [+0.08, +0.20] points with 50/1,000 labeled (slow seeded test; the new form +0.03
   [-0.02, +0.08]). The audit's -0.30 in `tricks` is label-draw noise: the same 10 draws give
   -0.30 under both forms; 22 panels x 100 draws give -0.00 [-0.02, +0.02] (old) and +0.00
-  [-0.02, +0.02] (new). simulation-v1 not rerun.
+  [-0.02, +0.02] (new). The simulation was rerun with the new form as
+  `results/simulation-v2` (2026-11-13).
 - Finding 6, coverage: `--profile coverage` (72 panels 1000 x 60, B = 20, ~15 min on 3
   workers), seeds 20261024 / 20261025 (`results/items-cov-v1`, `-v2`). Percentile overall
   34/72 and 35/72 (bias about -0.95 points from outside the region, invisible to the
