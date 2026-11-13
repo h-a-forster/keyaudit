@@ -492,11 +492,12 @@ each claim. Estimates are stratified by flag status with a finite-population cor
 intervals are Jeffreys posteriors per stratum (the difference estimator's normal interval
 crosses zero with this few positives) and cover sampling error only.
 
-| Benchmark | Items | `E_model` (flags) | Wrong key | Any key defect |
-|---|---|---|---|---|
-| ARC-Challenge test | 1,172 | 23.3% (287) | 0.61% [0.26%, 2.39%], 2 of 2 in the flagged stratum | 3.10% [1.71%, 5.97%], 6 flagged, 2 unflagged |
-| TruthfulQA MC1 | 817 | 37.0% (271) | 0 found | 1.39% [0.61%, 3.67%], all contested or imprecise |
+| Benchmark | Items | `E_model` (flags) | Wrong key | Any key defect | Found, flagged / unflagged: wrong key; any defect |
+|---|---|---|---|---|---|
+| ARC-Challenge test | 1,172 | 23.3% (287) | 0.61% [0.26%, 2.39%] | 3.10% [1.71%, 5.97%] | 2 / 0; 6 / 2 (of 80 / 120) |
+| TruthfulQA MC1 | 817 | 37.0% (271) | 0 found | 1.39% [0.61%, 3.67%] | 0 / 0; 2 / 1 (of 80 / 120) |
 
+The three TruthfulQA defects are all contested or imprecise keys, none a wrong key.
 The model-only rates, 23% and 37%, are far above the sampled defect rates of 3.1% and 1.4%,
 as on MMLU-Pro. TruthfulQA is the
 identifiability limit in pure form: by design, every model is drawn to the same misconception.

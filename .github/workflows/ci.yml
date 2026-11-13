@@ -63,5 +63,11 @@ jobs:
       - name: Test
         run: uv run pytest
 
+      - name: Published tables rebuild from the committed results
+        shell: bash
+        run: |
+          uv run python scripts/published_tables.py
+          git diff --exit-code -- results/
+
       - name: CLI smoke
         run: uv run keyaudit --version

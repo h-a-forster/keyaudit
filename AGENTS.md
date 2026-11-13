@@ -39,6 +39,9 @@ maintainer corrections), and rank suspect items.
   main. Open work lives in `backlog.md`.
 - Public-release hygiene: no personal names, local user paths or machine details in
   committed files or logs (scrub before committing).
+- README and REPORT results tables are copies of rows in `results/published.md` (a copy may
+  add cells of prose); never type a number into a table. `tests/test_published.py` and CI check
+  them. Numbers in prose are not checked yet.
 - Statistical honesty: report sizes, seeds, versions and intervals; name the estimand
   (`E_label` narrow/broad or `E_model` "under A1-A2"); Holm/q-values as DESIGN says; never
   call a flagged item wrong without a human label. A claimed third-party data error needs
@@ -68,6 +71,7 @@ maintainer corrections), and rank suspect items.
 | `scripts/reference_values.py` | independent recomputation of DESIGN 7.1 | done |
 | `scripts/option_mapping_check.py` | study-v1 against a refit under the fixed option mapping | done |
 | `scripts/e6/` | E6: flags against real key defects on BBH, ARC, TruthfulQA (REPORT 3.8) | done |
+| `scripts/published_tables.py` | `results/published.md`: every README/REPORT results table, from the committed results | done |
 
 ## How to test
 
@@ -86,7 +90,8 @@ uv run python scripts/reference_values.py
 uv run keyaudit fetch  --config configs/study.toml        # needs HF_TOKEN with accepted gates
 uv run keyaudit run    --config configs/study.toml --workers 3
 uv run keyaudit status --config configs/study.toml
-uv run keyaudit report --config configs/study.toml        # results/study-v1/; REPORT.md by hand
+uv run keyaudit report --config configs/study.toml        # results/study-v1/
+uv run python scripts/published_tables.py                  # results/published.md; REPORT/README tables copy it
 uv run python scripts/run_study.py --config configs/study_full.toml   # full size, retries
 ```
 
