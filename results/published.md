@@ -101,10 +101,10 @@ Do not edit by hand.
 
 ## REPORT: E6, sampled benchmarks
 
-| Benchmark | Items | `E_model` (flags) |
-|---|---|---|
-| ARC-Challenge test | 1,172 | 23.3% (287) |
-| TruthfulQA MC1 | 817 | 37.0% (271) |
+| Benchmark | Items | `E_model` (flags) | Wrong key | Any key defect | Found, flagged / unflagged: wrong key; any defect |
+|---|---|---|---|---|---|
+| ARC-Challenge test | 1,172 | 23.3% (287) | 0.61% [0.26%, 2.39%] | 3.10% [1.71%, 5.97%] | 2 / 0; 6 / 2 (of 80 / 120) |
+| TruthfulQA MC1 | 817 | 37.0% (271) | 0 found | 1.39% [0.61%, 3.67%] | 0 / 0; 2 / 1 (of 80 / 120) |
 
 ## REPORT: simulation rates (percent)
 

@@ -256,12 +256,32 @@ def e6() -> list[str]:
         ["Task", "Defects", "Flags", "Flags on defects", "AP (random)", "ROC AUC", "`E_model`"],
         rows,
     )
+
+    def rate(d: dict) -> str:
+        if not d["positives_flagged"] + d["positives_unflagged"]:
+            return "0 found"
+        lo, hi = d["ci95_pct"]
+        return f"{d['rate_pct']:.2f}% [{lo:.2f}%, {hi:.2f}%]"
+
+    def found(b: dict) -> str:
+        w, a = b["wrong_key"], b["any_defect"]
+        return (
+            f"{w['positives_flagged']} / {w['positives_unflagged']}; "
+            f"{a['positives_flagged']} / {a['positives_unflagged']}"
+            f" (of {b['sample_flagged']} / {b['sample_unflagged']})"
+        )
+
     rows = [
-        [SAMPLED[k], f"{b['items']:,}", f"{b['e_model_pct']:.1f}% ({b['flags']})"]
+        [SAMPLED[k], f"{b['items']:,}", f"{b['e_model_pct']:.1f}% ({b['flags']})",
+         rate(b["wrong_key"]), rate(b["any_defect"]), found(b)]
         for k, b in s["sampled"].items()
-    ]
+    ]  # fmt: skip
     out += ["## REPORT: E6, sampled benchmarks", ""]
-    return out + table(["Benchmark", "Items", "`E_model` (flags)"], rows)
+    return out + table(
+        ["Benchmark", "Items", "`E_model` (flags)", "Wrong key", "Any key defect",
+         "Found, flagged / unflagged: wrong key; any defect"],
+        rows,
+    )  # fmt: skip
 
 
 def simulation() -> list[str]:
