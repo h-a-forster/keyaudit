@@ -20,6 +20,18 @@ from keyaudit.keymix import fit_keymix
 from keyaudit.matrix import ResponseMatrix
 
 
+def _scores_labels(scores: ArrayLike, labels: ArrayLike) -> tuple[NDArray, NDArray]:
+    """1-D finite scores and boolean labels of the same length (NaN scores would otherwise be
+    ranked silently: last by AP and precision at k, NaN for ROC AUC)."""
+    s = np.asarray(scores, dtype=float)
+    y = np.asarray(labels, dtype=bool)
+    if s.shape != y.shape or s.ndim != 1:
+        raise ValueError("scores and labels must be 1-D arrays of the same length")
+    if not np.isfinite(s).all():
+        raise ValueError("scores must be finite")
+    return s, y
+
+
 def average_precision(scores: ArrayLike, labels: ArrayLike) -> float:
     """Average precision: sum over distinct score thresholds of recall gain x precision.
 
@@ -29,10 +41,7 @@ def average_precision(scores: ArrayLike, labels: ArrayLike) -> float:
     disagreement and one-coin Dawid-Skene. Without ties this equals the mean precision at the
     positives' ranks.
     """
-    s = np.asarray(scores, dtype=float)
-    y = np.asarray(labels, dtype=bool)
-    if s.shape != y.shape or s.ndim != 1:
-        raise ValueError("scores and labels must be 1-D arrays of the same length")
+    s, y = _scores_labels(scores, labels)
     if not y.any():
         raise ValueError("average precision is undefined without positives")
     order = np.argsort(-s, kind="stable")
@@ -52,8 +61,7 @@ def precision_recall_at_k(scores: ArrayLike, labels: ArrayLike, k: int) -> tuple
     cut contributes its positive share times the number of its items that fit, so the value
     does not depend on the order of tied items.
     """
-    s = np.asarray(scores, dtype=float)
-    y = np.asarray(labels, dtype=bool)
+    s, y = _scores_labels(scores, labels)
     if not 0 < k <= s.size:
         raise ValueError(f"k must be in 1..{s.size}")
     kth = np.sort(s)[::-1][k - 1]
@@ -67,8 +75,7 @@ def roc_auc(scores: ArrayLike, labels: ArrayLike) -> float:
     """ROC AUC as the Mann-Whitney probability (ties count one half)."""
     from scipy.stats import rankdata
 
-    s = np.asarray(scores, dtype=float)
-    y = np.asarray(labels, dtype=bool)
+    s, y = _scores_labels(scores, labels)
     n1, n0 = int(y.sum()), int((~y).sum())
     if n1 == 0 or n0 == 0:
         raise ValueError("ROC AUC needs positives and negatives")

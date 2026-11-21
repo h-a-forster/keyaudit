@@ -369,7 +369,9 @@ def parse_samples(spec: TaskSpec, rows: Sequence[dict[str, Any]]) -> dict[str, N
             )
         ll[r, : lls.size] = lls
         score = lls / lengths[: lls.size] if spec.metric == "acc_norm" else lls
-        resp[r] = int(np.argmax(score))
+        # np.argmax returns the first NaN, so an unscored option would become the response;
+        # such a row is an invalid response (-1) instead
+        resp[r] = -1 if np.isnan(score).any() else int(np.argmax(score))
         h = row.get("harness")
         if h is not None and np.isfinite(float(h)):
             harness[r] = int(float(h) > 0.5)

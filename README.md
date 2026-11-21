@@ -23,7 +23,8 @@ and states what responses alone cannot identify.
   v0.1.1).
 - On ARC-Challenge and TruthfulQA, with v1-leaderboard panels of 90 and 87 models, the
   model-only rates are 23% and 37% (24% and 33% of items flagged at q <= 0.10); random
-  samples checked item by item against sources put the defect rates at 3.1% and 1.4%.
+  samples checked item by item against sources put the defect rates at 3.1% [1.71%, 5.97%]
+  and 1.4% [0.61%, 3.67%].
 
 The panel tells you where to sample for human labels, not what the rate is.
 
@@ -145,9 +146,11 @@ the labeled design the calibrated 95% interval covers 97.8-98.5% (narrow) and 94
   from a mapping bug fixed after the study (REPORT.md 3.7). The label-calibrated rates and
   the narrow ranking metrics above do not change at the precision shown.
 
-On synthetic panels where its assumptions hold, the model recovers planted mis-keys well
-(AP 0.87-0.95, `results/simulation-v2/`, rerun 2026-11-13 with the current code); the real
-panel is far more correlated than those simulations.
+On synthetic panels without trick items the model recovers planted mis-keys well (AP 0.95
+where its assumptions hold, 0.87 and 0.91 with a weak or a clustered panel); with trick
+items (shared misconceptions, as in the real panel) it falls to 0.55
+(`results/simulation-v2/`, rerun 2026-11-13 with the current code). The real panel is far
+more correlated than those simulations.
 
 Upstream reports and their outcomes: [docs/upstream.md](docs/upstream.md).
 

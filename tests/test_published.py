@@ -71,19 +71,25 @@ def _e6_headlines() -> dict[str, list[str]]:
         f"{100 * tqa['flags'] / tqa['items']:.0f}% of items flagged"
     )
     rates = f"{arc['any_defect']['rate_pct']:.1f}% and {tqa['any_defect']['rate_pct']:.1f}%"
+    arc_ci, tqa_ci = ("[{:.2f}%, {:.2f}%]".format(*b["any_defect"]["ci95_pct"]) for b in (arc, tqa))
     return {
         "README.md": [
             bbh.replace("keyaudit's flags", "the flags"),
             f"{e_model} {flagged} at q <= 0.10)",
-            f"defect rates at {rates}.",
+            f"defect rates at {arc['any_defect']['rate_pct']:.1f}% {arc_ci} and "
+            f"{tqa['any_defect']['rate_pct']:.1f}% {tqa_ci}.",
         ],
         "REPORT.md": [
             f"on {bbh}",
-            f"{e_model} {flagged}), against defect rates of {rates} in random samples",
+            f"{e_model} {flagged}), against defect rates of {rates} in random samples "
+            f"checked item by item against sources (95% intervals {arc_ci} and {tqa_ci}).",
             f"The model-only rates, {arc['e_model_pct']:.0f}% and {tqa['e_model_pct']:.0f}%, "
             f"are far above the sampled defect rates of {rates},",
             f"flag precision was {arc['wrong_key']['positives_flagged']} of "
             f"{arc['sample_flagged']}.",
+            "The geometric_shapes solver left {unparsed} of its {n} items unparsed".format(
+                **s["bbh_solver_census"]["geometric_shapes"]
+            ),
         ],
         "CITATION.cff": [
             f"on {defects} real BIG-Bench Hard key defects ({date['positives']} wrong keys, "
@@ -98,3 +104,103 @@ def test_e6_headline_figures_match_the_summary():
         text = " ".join((ROOT / doc).read_text(encoding="utf-8").split())
         missing = [c for c in claims if c not in text]
         assert missing == [], doc
+
+
+def _study_headlines() -> dict[str, list[str]]:
+    """The study-v1 figures README and REPORT state in prose, rendered from its results."""
+    import json
+
+    def load(name: str) -> dict:
+        return json.loads((ROOT / "results/study-v1" / name).read_text(encoding="utf-8"))
+
+    est, val, panel = load("estimates.json"), load("validation.json"), load("panel.json")
+    mp = est["mmlu_pro"]
+    derived, nar = mp["mmlu_derived_model_only"], mp["label_calibrated_narrow"]
+    bro = mp["label_calibrated_broad"]
+    subj = load("labels.json")["label_estimates"]["canonical"]["narrow"]["per_subject"]
+    chem, vir = subj["college_chemistry"], subj["virology"]
+    v = val["mmlu_pro"]["narrow"]
+    op = v["operating_point"]
+    top = v["baselines"]["top_disagreement"]
+    vs_ds = v["vs_baselines"]["one_coin_ds"]
+    above = panel["mmlu_pro"]["choices"]["posterior_above_half"]
+    gpqa_acc = panel["gpqa"]["accuracy"]
+    n_flagged = _script().flagged()["mmlu_pro"]
+    pct = "{:.2%}".format
+    ci = "[{:.2%}, {:.2%}]".format
+    rate = f"{pct(nar['estimate'])} {ci(*nar['ci'])}"
+    ratio_all = derived["overall"] / nar["estimate"]
+    ratio_reg = derived["region_rate"] / nar["estimate"]
+    lo, hi = sorted((derived["overall"], derived["region_rate"]))
+    shares = (
+        f"{above['n_items']:,} items with posterior above 0.5 they pick the key "
+        f"{above['strongest']['key']:.0%} of the time and one shared other answer "
+        f"{above['strongest']['proposed']:.0%} of the time"
+    )
+    ap = f"{v['ap']:.3f} {'[{:.3f}, {:.3f}]'.format(*v['ap_ci'])}"
+    chem_n = f"{chem['positives']} of {chem['n_labeled']}"
+    vir_n = f"{vir['positives']} of {vir['n_labeled']}"
+    return {
+        "README.md": [
+            f"is {100 * lo:.0f}-{100 * hi:.0f}%, against {rate} by the human labels",
+            f"(variance ratio {nar['variance_ratio']:.2f})",
+            f"(labels alone: {pct(nar['classical'])})",
+            f"about {ratio_all:.0f} times the human-label rate",
+            f"On the {shares}.",
+            f"precision {ap} (random {v['base_rate']:.3f}, ROC AUC {v['auc']:.2f})",
+            f"top-decile disagreement ({top['ap']:.3f})",
+            f"College chemistry ({chem_n} labeled keys wrong) and virology ({vir_n})",
+            f"median accuracy {gpqa_acc['median']:.2f}) and the model-only rate "
+            f"({est['gpqa']['overall']:.0%})",
+            f"model-only flag rate is {pct(mp['region_rate'])} {ci(*mp['region_ci'])} in the "
+            f"competence region and {pct(mp['overall'])} overall",
+        ],
+        "REPORT.md": [
+            f"labels-only estimate ({pct(nar['classical'])}, {pct(bro['classical'])} on the "
+            "same items)",
+            f"{pct(derived['overall'])} over all of them and {pct(derived['region_rate'])} on "
+            f"the {derived['region_share']:.0%} the panel can judge, against the "
+            f"{pct(nar['estimate'])} human-label rate ({ratio_all:.1f}x and {ratio_reg:.1f}x)",
+            f"actually flags at q <= 0.10 is similar: {op['n_selected']} of the {v['n']:,} labeled "
+            f"items ({op['n_selected'] / v['n']:.1%}) and {n_flagged:,} of all "
+            f"{mp['n_items']:,} MMLU-Pro items ({n_flagged / mp['n_items']:.1%})",
+            f"{mp['n_items']:,} MMLU-Pro items the rate is {100 * mp['overall']:.1f}%, and for "
+            f"GPQA {est['gpqa']['overall']:.0%}",
+            f"of the {op['n_selected']} labeled items among the study's flags (q <= 0.10), only "
+            f"{op['tp']} ({op['precision']:.1%}) are wrong keys",
+            f"median accuracy {gpqa_acc['median']:.2f}, best {gpqa_acc['best']:.2f}",
+            f"Against the {v['n_positive']} Redux wrong keys among {v['n']:,} labeled items its "
+            f"average precision is {ap} (random {v['base_rate']:.3f}, ROC AUC {v['auc']:.2f})",
+            f"top-decile disagreement, gets {top['ap']:.3f} "
+            f"{'[{:.3f}, {:.3f}]'.format(*top['ap_ci'])}",
+            "one-coin Dawid-Skene (AP difference {:+.3f} [{:+.3f}, {:+.3f}])".format(
+                vs_ds["diff"], vs_ds["lo"], vs_ds["hi"]
+            ),
+            f"college chemistry, {chem_n} labeled items, {chem['rate']:.1%} "
+            f"{'[{:.1%}, {:.1%}]'.format(*chem['ci'])}, and virology, {vir_n}, "
+            f"{vir['rate']:.1%} {'[{:.1%}, {:.1%}]'.format(*vir['ci'])}",
+        ],
+    }
+
+
+def test_study_headline_figures_match_the_results():
+    for doc, claims in _study_headlines().items():
+        text = " ".join((ROOT / doc).read_text(encoding="utf-8").split())
+        missing = [c for c in claims if c not in text]
+        assert missing == [], doc
+
+
+def test_simulation_se_ratio_matches_the_summary():
+    """REPORT 4.1 states the calibrated-to-labels-only SE ratio of the simulation scenarios."""
+    import json
+
+    s = json.loads((ROOT / "results/simulation-v2/summary.json").read_text(encoding="utf-8"))
+    sc = s["scenarios"]
+    ratios = [sc[n]["cal_se"]["mean"] / sc[n]["classical_se"]["mean"] for n in sc if n != "tricks"]
+    tricks = sc["tricks"]
+    claim = (
+        f"0.55 to 0.57 points): {min(ratios):.2f} to {max(ratios):.2f} of it without trick items, "
+        f"{100 * tricks['cal_se']['mean']:.2f} against {100 * tricks['classical_se']['mean']:.2f} "
+        "with them"
+    )
+    assert claim in " ".join((ROOT / "REPORT.md").read_text(encoding="utf-8").split())

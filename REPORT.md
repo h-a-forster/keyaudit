@@ -18,7 +18,8 @@ drawn from `results/` by `scripts/make_figures.py`.
   BIG-Bench Hard, found by solving every item, keyaudit's flags hit 0 of 50 in
   geometric_shapes and 2 of 20 in date_understanding (section 3.8). On ARC-Challenge and
   TruthfulQA the model-only rates are 23% and 37% (24% and 33% of items flagged), against
-  defect rates of 3.1% and 1.4% in random samples checked item by item against sources.
+  defect rates of 3.1% and 1.4% in random samples checked item by item against sources
+  (95% intervals [1.71%, 5.97%] and [0.61%, 3.67%]).
 - **About 1.4% of MMLU-Pro's MMLU-derived items have a wrong key, by the human labels.** The
   label-calibrated estimate (model scores calibrated on the MMLU-Redux 2.0 relabels, over
   the 6,806 MMLU-derived items in the response matrix) is **1.42% [0.78%, 2.07%]** for a
@@ -26,12 +27,14 @@ drawn from `results/` by `scripts/make_figures.py`.
   option or several correct options (broad). The model scores barely help: the interval is
   as wide as the labels-only one (variance ratio 1.01), so this is in effect the
   labels-only estimate (1.48%, 3.98% on the same items).
-- **A model panel alone flags about 16 times as many items as have a wrong key.** On the
-  same 6,806 MMLU-derived items, the model-only flag rate (mean posterior that the key is
+- **The model-only flag rate is about 16 times the human-label key-error rate.** On the same
+  6,806 MMLU-derived items, the model-only flag rate (mean posterior that the key is
   wrong, from 96 Open LLM Leaderboard models) is 22.95% over all of them and 21.11% on the
-  83% the panel can judge, against the 1.42% human-label rate (16.1x and 14.9x). Over all
-  12,027 MMLU-Pro items it is 25.4%, and for GPQA 54%. These flag rates are not key-error
-  rates. They measure how often the strongest models agree on the same non-key answer:
+  83% the panel can judge, against the 1.42% human-label rate (16.1x and 14.9x). The share
+  of items it actually flags at q <= 0.10 is similar: 667 of the 2,892 labeled items (23.1%)
+  and 2,953 of all 12,027 MMLU-Pro items (24.6%). Over all 12,027 MMLU-Pro items the rate is
+  25.4%, and for GPQA 54%. These flag rates are not key-error rates. They measure how often
+  the strongest models agree on the same non-key answer:
   - the 10 strongest models are all Qwen2 / Qwen2.5 base models or fine-tunes (mean
     pairwise agreement 0.68) and fall in one cluster of 44 of the 96 models that answer
     alike; the cluster itself is of mixed lineage (Qwen, Mistral, Falcon, Phi and others);
@@ -57,12 +60,14 @@ drawn from `results/` by `scripts/make_figures.py`.
   answer options to every model, 4 of them four identical options (one with all four
   empty). These items cannot be answered as presented (section 3.6).
 - On synthetic panels (section 4) the model ranks planted mis-keys well when its
-  assumptions hold (AP 0.95), and the calibrated estimator stays within 0.3 points of the
-  truth in every scenario, including the trick-item scenario that mimics the real data.
+  assumptions hold (AP 0.95), and the calibrated estimator's mean bias is at most 0.3 points
+  in every scenario. In the trick-item scenario that mimics the real data it is -0.30
+  [-0.57, -0.03] over 10 panels, which a larger check traces to those panels' label draws
+  (section 4.1).
 - **Known artefact.** Four of the 2,953 flagged MMLU-Pro items are mapping artefacts from a
   bug fixed after the study (section 3.7). Fixing it leaves the label-calibrated rates and
   intervals unchanged at two decimals and moves the model-only rates by at most 0.04 points.
-- An automated audit in a separate session (2026-10-24) found eight issues, all addressed.
+- An automated audit (2026-10-24) found eight issues, all addressed.
   A re-audit (2026-10-30) of the fixes for findings 5 and 6 and of the model-run changes
   reproduced their numbers and found no error in them (section 3.7).
 
@@ -76,7 +81,7 @@ drawn from `results/` by `scripts/make_figures.py`.
 | Seed | 20261024 | 20261024 |
 | Units | fetch 500, labels 1, build 6, fit 5, boot 100, lofo 25, planted 40, validate 5 (all ok) | 70/70 (40 scenario panels, 30 item-bootstrap coverage panels) |
 | Wall time | about 2 h: fetch 23 min plus a 5 min GPQA re-fetch (1 worker), build 10 min, fit 1 min, bootstrap 52 min, planted keys 20 min, the rest 2 min (3 workers) | 29 min on 3 workers (2026-11-13) |
-| Code | keyaudit 0.1.0 at commits `80c4ded`..`593ed9f` (validate stage and report rerun after the AP fix); `build` predates the option-mapping fix of section 3.7 | keyaudit 0.1.1 at `face0a2` (rerun of simulation-v1, 0.1.0.dev0, after the fixes `15d5b7a` and `593ed9f`) |
+| Code | keyaudit 0.1.0.dev0 to 0.1.0, run starts at commits `22d3a69`..`39c2748` (`provenance.json`; validate stage and report rerun after the AP fix `593ed9f`); `build` predates the option-mapping fix of section 3.7 | keyaudit 0.1.1 at `face0a2` (rerun of simulation-v1, 0.1.0.dev0, after the fixes `15d5b7a` and `593ed9f`) |
 
 The configuration projected 20-30 minutes; the MMLU-Pro bootstrap (200 refits of a
 12,027 x 96 matrix, about 44 s each) dominated. `results/study-v1/provenance.json` records
@@ -175,8 +180,8 @@ is also tested against all other labeled items, Holm-adjusted over 56 subjects
   subject population size, chemistry is about 9.7%.
 - Virology: 10 / 26 = 38.5% [20.23%, 59.43%], Holm p < 0.001. It is most of the health
   category's 11 positives, which is why health (2.9%) does not stand out as a category.
-- No other subject or category differs after adjustment. Category rates range from 0.0%
-  (business, 0 / 104) to 2.9% (health, 11 / 385).
+- No other subject or category differs after adjustment. The other categories' rates range
+  from 0.0% (business, 0 / 104) to 2.9% (health, 11 / 385).
 
 **Maintainer corrections.** After the canonical revision the normalised key text of 23
 MMLU-Pro items changed (21 from `ori_mmlu`, 2 from `stemez`). One of these (question 11783,
@@ -284,8 +289,9 @@ that this comes from the panel and not from the benchmarks:
   1 item reaches q <= 0.10 despite the 12% rate.
 
 The category rates follow the same pattern (MMLU-Pro `E_model`: chemistry 35%, physics 33%,
-law 31%, psychology 13%, biology 9%): high where 2024 open models are weak, not where the
-labels find errors (the labels' top subjects are college chemistry and virology).
+business 32%, math 31%, law 31%, down to psychology 13% and biology 9%): high where 2024
+open models are weak, not where the labels find errors (the labels' top subjects are college
+chemistry and virology).
 
 ### 3.3 Validation of the suspect ranking
 
@@ -393,12 +399,12 @@ Ten of the 546 items were dropped because two or more options share a text hash:
   broke ties by position, and the stratified bootstrap lists resampled positives first, so
   for tie-heavy baselines (top-decile disagreement, one-coin Dawid-Skene) the bootstrap
   intervals excluded their own point estimates and the paired tests wrongly favoured those
-  baselines. The validate stage was rerun. The simulation tables in section 4.2 used the old
-  AP; for tie-heavy baselines their point values depend on item order (which is unrelated
-  to the planted keys), and they were not recomputed.
+  baselines. The validate stage was rerun. The simulation tables in section 4.2 come from
+  `results/simulation-v2/` (rerun 2026-11-13 with the current code), so they use tie-aware
+  AP; the old values are in `results/simulation-v1/`.
 - Residual variance floor in the calibrated estimator (`593ed9f`, section 3.1). Without it
   the narrow interval was [0.92%, 1.93%].
-- After a check of the write-up in a separate session: validation now evaluates the study's
+- After a check of the write-up: validation now evaluates the study's
   own flags (q-values over all items; previously q-values were recomputed on the labeled
   items only, giving 699 flagged and 34 narrow hits instead of 667 and 33); precision and
   recall at k are expected values over random order within tied scores; the model-only flag
@@ -464,8 +470,10 @@ rebuilt from `results/e6-benchmarks/` by `scripts/e6/score.py` (checked by
 `tests/test_e6_results.py`).
 
 **BIG-Bench Hard: a census of key errors, scored against the flags.** 15 of the 27 subtasks
-(3,750 items) were checked in full by deterministic solvers or computed answers: 13 subtasks
-had no mismatch (3,250 items), and two had systematic defects.
+(3,750 items) were checked by deterministic solvers or computed answers: 13 subtasks had no
+mismatch (3,250 items), and two had systematic defects. The geometric_shapes solver left 46 of
+its 250 items unparsed (`summary.json`, `bbh_solver_census`); four-sided shapes are classified
+by a separate check, `scripts/e6/geo.py`, whose output is not in `results/`.
 
 - `geometric_shapes`: the 25 items keyed "trapezoid" draw rectangles and the 25 keyed
   "ellipse" draw circles, with "rectangle" and "circle" offered every time (upstream BIG-bench
@@ -497,12 +505,16 @@ crosses zero with this few positives) and cover sampling error only.
 | ARC-Challenge test | 1,172 | 23.3% (287) | 0.61% [0.26%, 2.39%] | 3.10% [1.71%, 5.97%] | 2 / 0; 6 / 2 (of 80 / 120) |
 | TruthfulQA MC1 | 817 | 37.0% (271) | 0 found | 1.39% [0.61%, 3.67%] | 0 / 0; 2 / 1 (of 80 / 120) |
 
-The three TruthfulQA defects are all contested or imprecise keys, none a wrong key.
+The three TruthfulQA defects are one contested key (item 23), one imprecise key (567) and
+one key that was right at release and is wrong by its wording since March 2025 (478); none
+was a wrong key when the benchmark was released.
 The model-only rates, 23% and 37%, are far above the sampled defect rates of 3.1% and 1.4%,
 as on MMLU-Pro. TruthfulQA is the
 identifiability limit in pure form: by design, every model is drawn to the same misconception.
-On ARC the flagged stratum is where the wrong keys were, so the panel is a useful place to
-sample, but flag precision was 2 of 80.
+On ARC both wrong keys found and 6 of the 8 defects were in the flagged sample (6 of 80
+flagged against 2 of 120 unflagged items; one-sided Fisher p = 0.046, and p = 0.16 for the
+2 against 0 wrong keys). That is weak evidence that flags concentrate defects, and flag
+precision was 2 of 80.
 
 **Limits.** Both passes were done by the same model family, not by people, and blinding hides
 the key from the sheet, not from memory of well-known benchmarks. The ARC estimates rest on
@@ -560,11 +572,11 @@ estimand is calibrated against human labels.
   replaced (DESIGN 14, deviation 21). The rerun with the one-function form
   (`results/simulation-v2/`) gives the same -0.30 [-0.57, -0.03] in `tricks`.
 - Its standard error (0.30 to 0.49 points) is below that of the labels-only estimator on
-  the same labels (0.55 to 0.57 points): about half without trick items, 0.49 against 0.55
-  with them.
+  the same labels (0.55 to 0.57 points): 0.53 to 0.65 of it without trick items, 0.49
+  against 0.55 with them (`cal_se` over `classical_se` in `results/simulation-v2/summary.json`).
 - Interval coverage was 39/40 across scenarios (37/40 before the fixes), and 9/10 in
-  `tricks`. With 10 replicates per scenario, these counts cannot tell 95% coverage apart
-  from about 75%.
+  `tricks`. With 10 replicates per scenario, these counts cannot exclude coverage as low as
+  69% (10/10) or 55% (9/10) per scenario (Clopper-Pearson lower limits).
 
 ### 4.2 Ranking and operating point
 
@@ -579,7 +591,8 @@ Average precision against the planted mis-keys, and the operating point at q <= 
 
 - keymix has the highest mean AP in every scenario. Its margin over top-decile disagreement
   is large for a weak panel (0.87 against 0.60) and small for families (0.91 against 0.83).
-  Tie-aware AP (`593ed9f`) lowered the baselines' AP slightly; keymix's AP moved by at most
+  Tie-aware AP (`593ed9f`) lowered the baselines' AP by up to 0.04 (top-decile disagreement
+  in `weak`, 0.64 to 0.60, against `results/simulation-v1/`); keymix's AP moved by at most
   0.001.
 - In the three scenarios without tricks, the model's own FDR estimate (0.095 to 0.096) is
   conservative: the realised false discovery proportion is 0.00 to 0.05.
@@ -675,7 +688,8 @@ interval would not cover; only labels detect that.
 - **Simulation is not reality.** The simulated responses come from the model's own family,
   with deliberate violations in `weak`, `families` and `tricks`. The good results in 4.1 and
   4.2 are therefore a best case; the real-data ranking (AP 0.08) is far below the
-  simulated one (AP 0.87-0.95, `results/simulation-v2/`). With 10 replicates per scenario, the coverage statements are
+  simulated one (AP 0.87-0.95 without trick items, 0.55 with them,
+  `results/simulation-v2/`). With 10 replicates per scenario, the coverage statements are
   weak.
 - **Calibrated interval.** The residual variance floor in the calibrated estimator was added
   during this run by analogy with the label-only floor. In a simulation of this design it
@@ -690,8 +704,8 @@ interval would not cover; only labels detect that.
   text to
   `014c8cf5`, so a model's "correct" here can differ from its leaderboard scoring on items
   whose key changed.
-- **Audits.** The audits were automated, in sessions separate from the one that ran the
-  study; the first report is not in this repository. The audit of 2026-10-24 checked the
+- **Audits.** The audits were automated and independent of the study run; the first
+  report is not in this repository. The audit of 2026-10-24 checked the
   label-only numbers, the joins and this report against `results/`; a re-verification
   confirmed the fixes for findings 1-4 and 7,
   and a re-audit on 2026-10-30 those for findings 5 and 6 and the model-run changes

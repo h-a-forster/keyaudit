@@ -55,7 +55,7 @@ user-facing text.
 
 ## 3. Scope review (decisions taken at scaffold time)
 
-Implementation budget: about 4-5 hours of agent time, CPU only, at most 3 worker processes.
+Compute budget: CPU only, at most 3 worker processes.
 
 1. **Data access needs a Hugging Face account.** Every `open-llm-leaderboard/*-details`
    repository is gated with automatic approval ("agree to share your contact information"),

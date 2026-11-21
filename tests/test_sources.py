@@ -213,6 +213,9 @@ def test_parse_mmlu_pro_samples() -> None:
     assert leaderboard.n_correct(a) == 1
     assert a["harness_correct"].tolist() == [1, 0]
     assert leaderboard.harness_mismatches(a) == 0
+    # a NaN log-likelihood makes the response invalid instead of selecting that option
+    rows[1]["filtered_resps"] = _lls([float("nan"), -3.0, -4.0, -5.0])
+    assert leaderboard.parse_samples(spec, rows)["response"].tolist() == [2, -1]
 
 
 @pytest.mark.parametrize("n_opt", [3, 7, 9])

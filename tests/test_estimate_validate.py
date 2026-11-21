@@ -216,6 +216,12 @@ def test_roc_auc_hand() -> None:
     assert validate.roc_auc([0.9, 0.8, 0.1, 0.2], [1, 1, 0, 0]) == 1.0
     assert validate.roc_auc([0.5, 0.5, 0.5], [1, 0, 0]) == 0.5
     assert validate.roc_auc([0.1, 0.9, 0.5], [1, 0, 0]) == 0.0
+    # a NaN score is refused, not ranked last (AP, precision at k) or turned into NaN (AUC)
+    for metric in (validate.average_precision, validate.roc_auc):
+        with pytest.raises(ValueError, match="finite"):
+            metric([0.9, np.nan, 0.1], [1, 1, 0])
+    with pytest.raises(ValueError, match="finite"):
+        validate.precision_recall_at_k([0.9, np.nan, 0.1], [1, 1, 0], 1)
     with pytest.raises(ValueError):
         validate.roc_auc([1.0], [1])
 

@@ -276,6 +276,16 @@ def test_baselines_handle_missing() -> None:
     sp = simulate_panel(n_items=300, n_models=30, seed=22, missing_rate=0.1)
     for name in baselines.BASELINES:
         assert np.all(np.isfinite(baselines.score(sp.matrix, name))), name
+    # a model with no observed response adds nothing to one-coin Dawid-Skene (was all NaN)
+    m = sp.matrix
+    resp = m.responses.copy()
+    resp[:, 0] = -1
+    unobserved = ResponseMatrix(m.benchmark, m.item_id, m.group, m.n_options, m.key, resp, m.models)
+    np.testing.assert_allclose(
+        baselines.one_coin_ds(unobserved),
+        baselines.one_coin_ds(m.subset(models=np.arange(1, m.shape[1]))),
+        atol=1e-6,
+    )
 
 
 # -- slow: DESIGN 7.2 at full size --------------------------------------------------------------

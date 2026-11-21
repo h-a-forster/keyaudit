@@ -96,7 +96,11 @@ def one_coin_ds(
     onehot = np.zeros((n_items, n_models, k_max))
     ii, jj = np.nonzero(obs)
     onehot[ii, jj, r[ii, jj]] = 1.0
-    q = np.clip(np.nanmean(m.correct(), axis=0), 0.05, 0.95)
+    # start from each model's accuracy; a model with no observed response contributes nothing
+    # (any finite start), whereas NaN would turn every item's posterior into NaN
+    n_obs = obs.sum(0)
+    acc = np.where(n_obs > 0, (m.correct() == 1.0).sum(0) / np.maximum(n_obs, 1), 0.5)
+    q = np.clip(acc, 0.05, 0.95)
     eps = eps0
     w = np.zeros((n_items, k_max))
     for _ in range(max_iter):

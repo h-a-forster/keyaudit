@@ -22,7 +22,7 @@ maintainer corrections), and rank suspect items.
 - Every stochastic function takes `seed`; study units derive seeds from
   `(seed, crc32(unit_id))`.
 - No LLM or model API calls. CPU only. At most 3 worker processes, BLAS threads 1 per worker,
-  modest memory (the machine is shared).
+  modest memory.
 - Long jobs: every finished unit goes through `keyaudit.checkpoint.UnitStore` (atomic file
   per unit, skip on rerun, `progress.log`); wrap long runs in `scripts/run_study.py`
   (resume-on-failure loop). The default study takes about 2 h wall on 3 workers; the full
@@ -36,12 +36,13 @@ maintainer corrections), and rank suspect items.
   agent's.
 - Scratch files go in `tmp/` (gitignored). Do not create `.bak` copies; use git.
 - The repository is public: change it through pull requests with CI, not direct pushes to
-  main. Open work lives in `backlog.md`.
+  main. Open work is tracked outside the repository.
 - Public-release hygiene: no personal names, local user paths or machine details in
   committed files or logs (scrub before committing).
 - README and REPORT results tables are copies of rows in `results/published.md` (a copy may
   add cells of prose); never type a number into a table. `tests/test_published.py` and CI check
-  them. Numbers in prose are not checked yet.
+  them. The headline prose figures (study-v1 and E6 in README, REPORT and CITATION) are
+  rendered from the results in the same test; other prose numbers are not checked yet.
 - Statistical honesty: report sizes, seeds, versions and intervals; name the estimand
   (`E_label` narrow/broad or `E_model` "under A1-A2"); Holm/q-values as DESIGN says; never
   call a flagged item wrong without a human label. A claimed third-party data error needs
@@ -103,7 +104,7 @@ Before a long run, validate on a small sample, wrap it in the retry loop, and wa
 Updated: 2026-11-13 (v0.1.1 tagged and released 2026-11-07; E6 folded in as REPORT 3.8;
 simulation rerun as `results/simulation-v2/`; audit
 findings 1-7 fixed; the fixes for 5 and 6 and the model-run changes re-audited 2026-10-30;
-release review below). Open work is in `backlog.md`.
+release review below). Open work is tracked outside the repository.
 
 Done (M0):
 - Scaffold, CI, configs, `docs/DESIGN.md` with research checks: leaderboard details are all
@@ -149,7 +150,7 @@ Done (M5 and v0.1.0):
 - Checks at v0.1.0: `uv run pytest` (fast suite) passes, `ruff check` and `ruff format
   --check` pass. `scripts/reference_values.py` runs (exit 0); `pytest --runslow` was not re-run.
 
-Audit (automated, separate session, 2026-10-24; report kept outside the repository). Fixed
+Audit (automated, 2026-10-24; report kept outside the repository). Fixed
 after it, each in its own commit, from cached data only (no model calls):
 - Finding 1 (high): label-only intervals covered ~86% in a simulation of the actual design
   (35 of 56 subject strata have no positive, zero variance). Each stratum's variance is now
